@@ -163,6 +163,9 @@ class EffectsManager(Entity):
                 self.announcer.visual(f'blindness: {int(STATE.blindness * 100)}%', duration=1.5)
 
     def on_destroy(self):
+        if self.shadow_figure:
+            destroy(self.shadow_figure)
+            self.shadow_figure = None
         camera.overlay.color = Color(0, 0, 0, 0)
         scene.clearFog()
         if self.ui:

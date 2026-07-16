@@ -12,4 +12,3 @@ ignore = ["E402", "F401", "F841"]
 [tool.pytest.ini_options]
 addopts = "-ra --strict-config --strict-markers"
 testpaths = ["tests"]
-
