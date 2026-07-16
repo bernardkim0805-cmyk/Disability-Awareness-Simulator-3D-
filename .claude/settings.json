@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c \"import ursina; print\\(ursina.__version__\\)\")",
+      "Bash(pip3 install *)",
+      "Bash(python3 -m py_compile main.py simulator/*.py)",
+      "Bash(python3 /private/tmp/claude-501/-Users-admin-Documents-GitHub-studyspring-Disability-Awareness-Simulator-3D-/cd0ae41a-7a7a-4227-b45a-9a0d39e0aff3/scratchpad/smoke_test.py)",
+      "Bash(python3 -m venv .venv)",
+      "Bash(.venv/bin/pip install *)",
+      "Bash(.venv/bin/python -c \"import ursina; print\\('ursina', ursina.__version__, 'OK in venv'\\)\")",
+      "Bash(.venv/bin/pip show *)",
+      "Bash(.venv/bin/python -)",
+      "Bash(python3 -c ' *)",
+      "Bash(grep -a \"STATE A\" /dev/null; true)",
+      "Read(//dev/**)"
+    ]
+  }
+}
