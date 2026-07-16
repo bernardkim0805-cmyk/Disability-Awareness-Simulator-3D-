@@ -117,10 +117,13 @@ def incompatibility_reason(experience: str, effect_id: str) -> str | None:
     if effect_id not in incompatible_effects(experience):
         return None
     if experience == "visual":
-        return "Blocked: the full visual-impairment mode already controls the visual field."
+        return ("Simulator compatibility limitation: the full visual-impairment mode already "
+                "controls this rendered visual field. Real conditions may coexist.")
     if experience == "deaf":
-        return "Blocked: the full deaf mode removes audio, so another hearing effect would be hidden."
-    return "Blocked: the full ADHD experience already supplies its attention mechanic."
+        return ("Simulator compatibility limitation: full deaf mode removes this game's audio, "
+                "so another hearing effect would be hidden. Real conditions may coexist.")
+    return ("Simulator compatibility limitation: the full ADHD experience already runs this "
+            "attention mechanic. Real conditions may coexist.")
 
 
 def select_experience(state: Any, experience: str) -> set[str]:
@@ -164,6 +167,12 @@ def reset_to_baseline(state: Any) -> None:
     state.lab_effects.clear()
     state.lab_split = False
     state.blindness = 0.55
+
+
+def toggle_split(state: Any) -> bool:
+    """Toggle split-screen comparison and return its new state."""
+    state.lab_split = not state.lab_split
+    return state.lab_split
 
 
 def active_summary(state: Any) -> str:

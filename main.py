@@ -11,7 +11,13 @@ from pathlib import Path
 import sys
 
 from ursina import Ursina, window, Color, Entity, Sky, application
-from simulator.windowing import requested_scenario, requested_window_size
+from simulator.windowing import (
+    requested_effects,
+    requested_experience,
+    requested_capture,
+    requested_scenario,
+    requested_window_size,
+)
 
 application.asset_folder = Path(__file__).resolve().parent  # assets work from any cwd
 
@@ -59,14 +65,37 @@ window.cog_button.visible = False
 if size := requested_window_size(sys.argv[1:]):
     window.size = size
 
-from simulator.config import SCENARIOS, STATE
+from simulator.config import DISABILITIES, SCENARIOS, STATE
+from simulator.fx.registry import EFFECTS
 from simulator.menu import MainMenu, _scenario_class
 
 scenario_override = requested_scenario(sys.argv[1:], set(SCENARIOS))
-if scenario_override:
+experience_override = requested_experience(sys.argv[1:], set(DISABILITIES))
+if experience_override:
+    STATE.disability = experience_override
+STATE.lab_effects = requested_effects(sys.argv[1:], set(EFFECTS))
+STATE.lab_split = '--split' in sys.argv[1:]
+if '--lab-demo' in sys.argv[1:]:
+    from simulator.lab_demo import LabExperienceDemo
+    LabExperienceDemo()
+elif scenario_override:
     STATE.scenario = scenario_override
     _scenario_class(scenario_override)()
 else:
-    MainMenu()
+    menu = MainMenu()
+    if '--open-lab' in sys.argv[1:]:
+        from ursina import invoke
+        invoke(menu.open_lab, delay=.2)
+
+capture_path = requested_capture(sys.argv[1:])
+if capture_path:
+    from panda3d.core import Filename
+    from ursina import invoke
+
+    def capture_and_quit():
+        app.win.saveScreenshot(Filename.fromOsSpecific(capture_path))
+        invoke(application.quit, delay=.2)
+
+    invoke(capture_and_quit, delay=1.0)
 
 app.run()

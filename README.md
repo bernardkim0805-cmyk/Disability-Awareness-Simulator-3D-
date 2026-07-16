@@ -66,8 +66,15 @@ all simulations. Combinations that would hide or duplicate one another are visib
 blocked rather than silently producing misleading results.
 
 Controls in the lab: number keys `1`-`5` switch categories, arrow keys select,
-`Space`/`Enter` toggles, `R` resets to baseline, and `Esc` applies and returns.
+`Space`/`Enter` toggles, `P` cycles presets, `S` toggles split-screen, `D` opens
+the selected original experience's live comparison space, `R` safely disables
+all effects, and `Esc` applies and returns. The main menu also supports `1`-`7`
+for experiences, `8`/`9`/`0` for scenarios, `L` for the lab, and `Enter` to start.
 During scenarios, hold `N` to compare normal vision when visual effects are active.
+
+Blocked combinations are simulator compatibility limitations: they prevent two
+implementations from controlling or hiding the same game output. They are not
+claims that the corresponding real conditions cannot coexist.
 
 For deterministic development checks, launch a scenario directly without changing
 normal menu behavior:

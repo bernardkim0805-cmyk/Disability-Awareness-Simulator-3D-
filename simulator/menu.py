@@ -149,8 +149,11 @@ class MainMenu(Entity):
                                  position=(-.52, -.35), color=Color(.3, .25, .45, 1),
                                  highlight_color=Color(.4, .35, .55, 1),
                                  on_click=self.open_lab)
-        Text(parent=self.ui, text='Keyboard: Tab through controls · Enter select · Esc quit',
-             origin=(0, 0), y=-.47, scale=.64, color=Color(.6, .6, .65, 1))
+        Entity(parent=self.ui, model='quad', position=(0, -.465), scale=(.72, .035),
+               color=Color(.03, .035, .05, .86))
+        Text(parent=self.ui,
+             text='Keyboard: 1-7 experience · 8/9/0 scenario · L lab · Enter start · Esc quit',
+             origin=(0, 0), y=-.47, scale=.64, color=Color(.84, .85, .9, 1))
 
         self.select_disability(STATE.disability or 'none', apply=False)
         self.select_scenario(STATE.scenario)
@@ -194,10 +197,19 @@ class MainMenu(Entity):
                                 if key == (STATE.disability or 'none')
                                 else Color(.13, .15, .2, .9))
             self._refresh_desc()
-        LabPanel(on_close=back)
+        LabPanel(on_close=back, on_demo=self.start_lab_demo)
+
+    def start_lab_demo(self):
+        from .lab_demo import LabExperienceDemo
+        self._clear_menu()
+        LabExperienceDemo()
 
     def start_game(self):
         cls = _scenario_class(STATE.scenario)
+        self._clear_menu()
+        cls()
+
+    def _clear_menu(self):
         camera.parent = scene
         camera.position = (0, 0, 0)
         camera.rotation = (0, 0, 0)
@@ -208,11 +220,22 @@ class MainMenu(Entity):
         destroy(self.cam_pivot)
         destroy(self.ui)
         destroy(self)
-        cls()
 
     def update(self):
         self.cam_pivot.rotation_y += 5 * time.dt
 
     def input(self, key):
-        if key == 'escape' and self.ui.enabled and self.accept_input:
+        if not self.ui.enabled or not self.accept_input:
+            return
+        experience_keys = dict(zip('1234567', DISABILITIES, strict=True))
+        scenario_keys = {'8': 'school', '9': 'train', '0': 'zombies'}
+        if key in experience_keys:
+            self.select_disability(experience_keys[key])
+        elif key in scenario_keys:
+            self.select_scenario(scenario_keys[key])
+        elif key == 'l':
+            self.open_lab()
+        elif key == 'enter':
+            self.start_game()
+        elif key == 'escape':
             application.quit()

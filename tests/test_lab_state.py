@@ -10,6 +10,7 @@ from simulator.lab_state import (
     reset_to_baseline,
     select_experience,
     toggle_effect,
+    toggle_split,
 )
 
 
@@ -45,12 +46,17 @@ def test_incompatible_combinations_are_removed_and_blocked() -> None:
     assert removed == {"glaucoma"}
     assert state.lab_effects == {"tinnitus": .4}
     assert toggle_effect(state, "macular") is not None
+    assert "Real conditions may coexist" in toggle_effect(state, "macular")
 
     select_experience(state, "deaf")
     assert "tinnitus" not in state.lab_effects
     assert incompatible_effects("deaf") == {
         key for key, spec in EFFECTS.items() if spec["cat"] == "audio"
     }
+
+    state.lab_effects = {"adhd_fx": .6, "memory": .4}
+    assert select_experience(state, "adhd") == {"adhd_fx"}
+    assert state.lab_effects == {"memory": .4}
 
 
 def test_effect_toggle_and_custom_intensity_state() -> None:
@@ -59,6 +65,9 @@ def test_effect_toggle_and_custom_intensity_state() -> None:
     assert state.lab_effects["glaucoma"] == PRESETS["moderate"]
     state.lab_effects["glaucoma"] = .47
     assert state.lab_effects["glaucoma"] == .47
+    assert toggle_effect(state, "glaucoma") is None
+    assert "glaucoma" not in state.lab_effects
+    assert toggle_effect(state, "glaucoma") is None
     assert toggle_effect(state, "glaucoma") is None
     assert "glaucoma" not in state.lab_effects
 
@@ -83,6 +92,13 @@ def test_reset_returns_to_true_baseline() -> None:
     assert state.lab_effects == {}
     assert state.lab_split is False
     assert state.blindness == .55
+
+
+def test_repeated_split_toggling_returns_to_a_clean_state() -> None:
+    state = GameState()
+    assert toggle_split(state) is True
+    assert toggle_split(state) is False
+    assert state.lab_split is False
 
 
 def test_postfx_falls_back_when_shader_is_unsupported(monkeypatch) -> None:

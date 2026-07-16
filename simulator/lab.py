@@ -18,6 +18,7 @@ from .lab_state import (
     reset_to_baseline,
     select_experience,
     toggle_effect,
+    toggle_split as toggle_split_state,
 )
 
 CATEGORIES = [
@@ -52,9 +53,11 @@ def _button(parent: Entity, text: str, position: tuple[float, float],
 class LabPanel(Entity):
     """Lab UI with keyboard navigation and live, non-destructive previews."""
 
-    def __init__(self, on_close: Callable[[], None] | None = None, **kwargs):
+    def __init__(self, on_close: Callable[[], None] | None = None,
+                 on_demo: Callable[[], None] | None = None, **kwargs):
         super().__init__(parent=camera.ui, **kwargs)
         self.on_close = on_close
+        self.on_demo = on_demo
         self.category = "original"
         self.selected_id = STATE.disability or "none"
         self.rows: list[Entity] = []
@@ -62,6 +65,7 @@ class LabPanel(Entity):
         self.focus_index = 0
         self.preview_stack: EffectStack | None = None
         self.original_preview: EffectsManager | None = None
+        self.preset_index = 1
 
         Entity(parent=self, model="quad", color=PANEL, scale=(2, 2), z=1)
         Entity(parent=self, model="quad", color=SURFACE, position=(-.47, .01),
@@ -105,14 +109,16 @@ class LabPanel(Entity):
                                     self.toggle_split, text_scale=.65)
         _button(self, "RESET BASELINE", (.00, -.345), (.19, .045),
                 self.reset, color=Color(.42, .18, .18, 1), text_scale=.63)
-        _button(self, "APPLY & BACK", (.69, -.345), (.22, .05), self.close,
+        _button(self, "LIVE DEMO [D]", (.45, -.345), (.20, .05), self.open_demo,
+                color=Color(.22, .34, .55, 1), text_scale=.67)
+        _button(self, "APPLY & BACK", (.70, -.345), (.20, .05), self.close,
                 color=SELECTED, text_scale=.72)
 
         Text(parent=self,
-             text="Keyboard: 1-5 categories  |  Up/Down select  |  Space toggle  |  "
-                  "N compare  |  Esc apply & back",
+             text="Keyboard: 1-5 categories · Up/Down focus · Left/Right intensity · Space toggle · "
+                  "P preset · S split · D demo · R disable all · Esc back",
              origin=(0, 0), y=-.445, scale=.61, color=MUTED)
-        Text(parent=self, text=DISCLAIMER + " Experiences vary between individuals.",
+        Text(parent=self, text=DISCLAIMER,
              origin=(0, 0), y=-.475, scale=.54, color=Color(.72, .73, .78, 1))
 
         self.set_category("original")
@@ -255,6 +261,11 @@ class LabPanel(Entity):
         self.set_category(self.category)
         self._rebuild_preview()
 
+    def cycle_preset(self) -> None:
+        values = list(PRESETS.values())
+        self.preset_index = (self.preset_index + 1) % len(values)
+        self.apply_preset(values[self.preset_index])
+
     def reset(self) -> None:
         reset_to_baseline(STATE)
         self.selected_id = "none"
@@ -263,9 +274,27 @@ class LabPanel(Entity):
         self._rebuild_preview()
 
     def toggle_split(self) -> None:
-        STATE.lab_split = not STATE.lab_split
+        toggle_split_state(STATE)
         self.split_button.text = f"SPLIT: {'ON' if STATE.lab_split else 'OFF'}"
         self.status.text = "Split-screen affects visual effects during preview and scenarios."
+
+    def adjust_selected_intensity(self, delta: float) -> None:
+        if self.category == "original" and self.selected_id == "visual":
+            self.set_blindness(max(5, min(100, STATE.blindness * 100 + delta)))
+            self.set_category(self.category)
+            return
+        if self.category != "original" and self.selected_id in STATE.lab_effects:
+            value = STATE.lab_effects[self.selected_id] * 100
+            self.set_intensity(self.selected_id, max(5, min(100, value + delta)))
+            self.set_category(self.category)
+        else:
+            self.status.text = "Enable this effect before adjusting its intensity."
+
+    def open_demo(self) -> None:
+        callback = self.on_demo
+        self.close(invoke_callback=False)
+        if callback:
+            callback()
 
     def _refresh_summary(self) -> None:
         self.summary.text = active_summary(STATE)
@@ -300,10 +329,18 @@ class LabPanel(Entity):
             self.set_category(self.category)
         elif key in {"space", "enter"}:
             self.toggle(self.selected_id)
+        elif key in {"left arrow", "right arrow"}:
+            self.adjust_selected_intensity(-5 if key == "left arrow" else 5)
+        elif key == "p":
+            self.cycle_preset()
+        elif key == "s":
+            self.toggle_split()
+        elif key == "d":
+            self.open_demo()
         elif key == "r":
             self.reset()
 
-    def close(self) -> None:
+    def close(self, invoke_callback: bool = True) -> None:
         if self.preview_stack:
             self.preview_stack.cleanup()
             self.preview_stack = None
@@ -312,5 +349,5 @@ class LabPanel(Entity):
             self.original_preview = None
         callback = self.on_close
         destroy(self)
-        if callback:
+        if callback and invoke_callback:
             callback()
