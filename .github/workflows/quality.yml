@@ -33,4 +33,4 @@ jobs:
         run: python -m compileall -q main.py simulator tests
 
       - name: Run tests
-        run: pytest
+        run: python -m pytest
