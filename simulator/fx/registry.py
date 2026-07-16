@@ -18,8 +18,8 @@ from .movement import ParkinsonianTremor, EssentialTremor, VestibularDisorder
 from .cognitive import (Prosopagnosia, HemispatialNeglect, ADHDDistraction,
                         MemoryImpairment)
 
-DISCLAIMER = ('This simulation is an educational approximation. Individual\n'
-              'experiences vary and cannot be perfectly represented.')
+DISCLAIMER = ('This lab demonstrates selected barriers and effects; it does not reproduce\n'
+              'every person\'s lived experience. Experiences vary between individuals.')
 
 PRESETS = {'mild': .3, 'moderate': .6, 'severe': .9}
 
