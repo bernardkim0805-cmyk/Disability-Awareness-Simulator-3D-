@@ -8,8 +8,10 @@ loadPrcFileData('', 'framebuffer-multisample 1')  # smooth edges (anti-aliasing)
 loadPrcFileData('', 'multisamples 4')             # 8x fails to open a window here
 
 from pathlib import Path
+import sys
 
 from ursina import Ursina, window, Color, Entity, Sky, application
+from simulator.windowing import requested_scenario, requested_window_size
 
 application.asset_folder = Path(__file__).resolve().parent  # assets work from any cwd
 
@@ -53,7 +55,18 @@ window.fps_counter.enabled = False
 window.exit_button.visible = False
 window.cog_button.visible = False
 
-from simulator.menu import MainMenu
-MainMenu()
+
+if size := requested_window_size(sys.argv[1:]):
+    window.size = size
+
+from simulator.config import SCENARIOS, STATE
+from simulator.menu import MainMenu, _scenario_class
+
+scenario_override = requested_scenario(sys.argv[1:], set(SCENARIOS))
+if scenario_override:
+    STATE.scenario = scenario_override
+    _scenario_class(scenario_override)()
+else:
+    MainMenu()
 
 app.run()

@@ -30,6 +30,7 @@ class EffectsManager(Entity):
         super().__init__(**kwargs)
         self.player = player
         self.announcer = announcer
+        self.ui = Entity(parent=camera.ui)
         self.focused = True            # ADHD: False while a distraction is active
         self.focus = 1.0               # ADHD: 0..1 attention meter
         self.distraction_ui = None
@@ -40,17 +41,17 @@ class EffectsManager(Entity):
 
         d = STATE.disability
         if d == 'adhd':
-            self.focus_label = Text(parent=camera.ui, text='FOCUS', position=(-.86, .44),
+            self.focus_label = Text(parent=self.ui, text='FOCUS', position=(-.86, .44),
                                     scale=.8, color=Color(.95, .6, .15, 1))
-            self.focus_bg = Entity(parent=camera.ui, model='quad', color=Color(.2, .2, .2, .8),
+            self.focus_bg = Entity(parent=self.ui, model='quad', color=Color(.2, .2, .2, .8),
                                    position=(-.72, .435), scale=(.2, .02))
-            self.focus_bar = Entity(parent=camera.ui, model='quad', color=Color(.95, .6, .15, 1),
+            self.focus_bar = Entity(parent=self.ui, model='quad', color=Color(.95, .6, .15, 1),
                                     position=(-.82, .435), origin=(-.5, 0), scale=(.2, .02))
         elif d == 'schizophrenia':
             self.shadow_figure = self._make_shadow()
         elif d == 'visual':
             self._apply_blindness()
-            Text(parent=camera.ui, text='[ and ] adjust blindness', position=(-.86, .44),
+            Text(parent=self.ui, text='[ and ] adjust blindness', position=(-.86, .44),
                  scale=.8, color=Color(.7, .7, .7, .8))
 
     # ------------------------------------------------------------------ visual
@@ -97,10 +98,10 @@ class EffectsManager(Entity):
             from .audio import get_audio
             get_audio().play('buzz', volume=.4)
             camera.shake(duration=.4, magnitude=1.5)
-            self.distraction_ui = Text(parent=camera.ui, origin=(0, 0), y=.15, scale=1.2,
+            self.distraction_ui = Text(parent=self.ui, origin=(0, 0), y=.15, scale=1.2,
                                        text=random.choice(ADHD_DISTRACTIONS),
                                        color=Color(1, .75, .3, 1))
-            self._refocus_hint = Text(parent=camera.ui, origin=(0, 0), y=.07, scale=.9,
+            self._refocus_hint = Text(parent=self.ui, origin=(0, 0), y=.07, scale=.9,
                                       text='( press F to drag your attention back )',
                                       color=Color(.8, .8, .8, .9))
         if self.focused:
@@ -119,7 +120,7 @@ class EffectsManager(Entity):
             self.whisper_timer = random.uniform(3, 9)
             from .audio import get_audio
             get_audio().play('whisper', volume=.3)
-            t = Text(parent=camera.ui, text=random.choice(WHISPERS),
+            t = Text(parent=self.ui, text=random.choice(WHISPERS),
                      position=(random.uniform(-.55, .55), random.uniform(-.35, .35)),
                      origin=(0, 0), scale=random.uniform(.8, 1.4),
                      color=Color(.75, .55, .9, .0))
@@ -164,3 +165,5 @@ class EffectsManager(Entity):
     def on_destroy(self):
         camera.overlay.color = Color(0, 0, 0, 0)
         scene.clearFog()
+        if self.ui:
+            destroy(self.ui)

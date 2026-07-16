@@ -20,9 +20,11 @@ def test_core_modules_import_without_starting_game() -> None:
         "simulator.fx.visual",
         "simulator.human",
         "simulator.lab",
+        "simulator.lab_state",
         "simulator.npc",
         "simulator.player",
         "simulator.world",
+        "simulator.windowing",
     ):
         assert importlib.import_module(module_name) is not None
 
@@ -38,3 +40,13 @@ def test_default_game_state_is_valid() -> None:
     assert state.disability is None
     assert state.scenario in SCENARIOS
     assert 0 <= state.blindness <= 1
+
+
+def test_supported_window_sizes_parse_without_platform_paths() -> None:
+    from simulator.windowing import requested_scenario, requested_window_size
+
+    assert requested_window_size(["--window-size", "1280x720"]) == (1280, 720)
+    assert requested_window_size(["--window-size", "1920x1080"]) == (1920, 1080)
+    assert requested_window_size(["--window-size", "bad"]) is None
+    assert requested_scenario(["--scenario", "train"], set(SCENARIOS)) == "train"
+    assert requested_scenario(["--scenario", "unknown"], set(SCENARIOS)) is None

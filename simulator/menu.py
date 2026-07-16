@@ -2,9 +2,10 @@
 import random
 
 from ursina import (Entity, Text, Button, Color, Sky, Slider, camera, scene, mouse,
-                    destroy, time, application, window)
+                    destroy, time, application, window, invoke)
 
 from .config import STATE, DISABILITIES, SCENARIOS
+from .lab_state import active_summary, select_experience
 from .npc import NPC
 
 SCENARIO_CLASSES = {}  # filled lazily to avoid circular imports
@@ -23,9 +24,14 @@ def _scenario_class(key):
 class MainMenu(Entity):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.accept_input = False
         mouse.locked = False
         self._build_backdrop()
         self._build_ui()
+        invoke(self._enable_input, delay=.1)
+
+    def _enable_input(self):
+        self.accept_input = True
 
     # ------------------------------------------------------- 3D backdrop plaza
     def _build_backdrop(self):
@@ -86,14 +92,18 @@ class MainMenu(Entity):
         self.ui = Entity(parent=camera.ui)
         Entity(parent=self.ui, model='quad', color=Color(0, 0, 0, .45),
                scale=(2, 2), z=1)
+        Entity(parent=self.ui, model='quad', color=Color(.05, .06, .09, .92),
+               position=(-.5, .01), scale=(.78, .69), z=.5)
+        Entity(parent=self.ui, model='quad', color=Color(.05, .06, .09, .92),
+               position=(.5, .01), scale=(.78, .69), z=.5)
 
         Text(parent=self.ui, text='WALK  IN  MY  WORLD', origin=(0, 0), y=.44,
              scale=2.6, color=Color(1, 1, 1, 1))
         Text(parent=self.ui, text='a 3D disability-awareness simulator', origin=(0, 0),
              y=.38, scale=1, color=Color(.75, .8, .9, 1))
 
-        Text(parent=self.ui, text='— choose an experience —', position=(-.52, .30),
-             origin=(0, 0), scale=.9, color=Color(.8, .75, .5, 1))
+        Text(parent=self.ui, text='1  CHOOSE AN EXPERIENCE', position=(-.52, .30),
+             origin=(0, 0), scale=.82, color=Color(.95, .72, .25, 1))
         self.dis_buttons = {}
         for i, (key, d) in enumerate(DISABILITIES.items()):
             b = Button(parent=self.ui, text=f"{d['icon']} {d['name']}",
@@ -104,8 +114,8 @@ class MainMenu(Entity):
             b.on_click = lambda k=key: self.select_disability(k)
             self.dis_buttons[key] = b
 
-        Text(parent=self.ui, text='— choose a scenario —', position=(.52, .30),
-             origin=(0, 0), scale=.9, color=Color(.8, .75, .5, 1))
+        Text(parent=self.ui, text='2  CHOOSE A SCENARIO', position=(.52, .30),
+             origin=(0, 0), scale=.82, color=Color(.95, .72, .25, 1))
         self.scn_buttons = {}
         for i, (key, s) in enumerate(SCENARIOS.items()):
             b = Button(parent=self.ui, text=f"{s['icon']} {s['name']}",
@@ -115,37 +125,40 @@ class MainMenu(Entity):
             b.on_click = lambda k=key: self.select_scenario(k)
             self.scn_buttons[key] = b
 
-        self.desc_text = Text(parent=self.ui, text='', origin=(0, 0), y=-.13,
-                              scale=.95, color=Color(.9, .9, .95, 1))
+        self.desc_text = Text(parent=self.ui, text='', position=(.16, -.04),
+                              scale=.77, color=Color(.9, .9, .95, 1))
+        self.active_text = Text(parent=self.ui, text='', position=(.16, -.24),
+                                scale=.62, color=Color(.68, .88, .8, 1))
 
         # blindness slider — appears only for visual impairment
-        self.blind_label = Text(parent=self.ui, text='degree of blindness', origin=(0, 0),
-                                y=-.255, scale=.85, color=Color(.8, .8, .8, 1), enabled=False)
+        self.blind_label = Text(parent=self.ui, text='VISUAL INTENSITY', origin=(0, 0),
+                                position=(-.52, -.245), scale=.7,
+                                color=Color(.8, .8, .8, 1), enabled=False)
         self.blind_slider = Slider(min=0, max=100, default=int(STATE.blindness * 100),
                                    step=1, dynamic=True, parent=self.ui,
-                                   position=(-.22, -.30), scale=.9, enabled=False)
+                                   position=(-.72, -.29), scale=.78, enabled=False)
         self.blind_slider.on_value_changed = self._on_blindness
 
-        self.start_button = Button(parent=self.ui, text='>>  START  <<', scale=(.3, .08),
-                                   position=(0, -.40), color=Color(.15, .45, .25, 1),
+        self.start_button = Button(parent=self.ui, text='START SCENARIO', scale=(.3, .07),
+                                   position=(.52, -.32), color=Color(.15, .45, .25, 1),
                                    highlight_color=Color(.2, .6, .35, 1),
                                    on_click=self.start_game)
         n_active = len(STATE.lab_effects)
         lab_label = f'ACCESSIBILITY LAB ({n_active} active)' if n_active else 'ACCESSIBILITY LAB'
-        self.lab_button = Button(parent=self.ui, text=lab_label, scale=(.3, .05),
-                                 position=(.52, -.05), color=Color(.3, .25, .45, 1),
+        self.lab_button = Button(parent=self.ui, text=lab_label, scale=(.34, .055),
+                                 position=(-.52, -.35), color=Color(.3, .25, .45, 1),
                                  highlight_color=Color(.4, .35, .55, 1),
                                  on_click=self.open_lab)
-        Text(parent=self.ui, text='in every scenario the other people around you find easy\n'
-                                  'what you may find hard — talk to them with E',
-             origin=(0, 0), y=-.47, scale=.75, color=Color(.6, .6, .65, 1))
+        Text(parent=self.ui, text='Keyboard: Tab through controls · Enter select · Esc quit',
+             origin=(0, 0), y=-.47, scale=.64, color=Color(.6, .6, .65, 1))
 
-        self.select_disability('none')
-        self.select_scenario('school')
+        self.select_disability(STATE.disability or 'none', apply=False)
+        self.select_scenario(STATE.scenario)
 
     # ------------------------------------------------------------------ events
-    def select_disability(self, key):
-        STATE.disability = key
+    def select_disability(self, key, apply=True):
+        if apply:
+            select_experience(STATE, key)
         for k, b in self.dis_buttons.items():
             b.color = DISABILITIES[k]['color'] if k == key else Color(.13, .15, .2, .9)
         self._refresh_desc()
@@ -163,6 +176,7 @@ class MainMenu(Entity):
         d = DISABILITIES[STATE.disability or 'none']
         s = SCENARIOS[STATE.scenario]
         self.desc_text.text = f"{d['desc']}\n\n{s['icon']} {s['name']}: {s['desc']}"
+        self.active_text.text = active_summary(STATE)
 
     def _on_blindness(self):
         STATE.blindness = self.blind_slider.value / 100
@@ -175,6 +189,11 @@ class MainMenu(Entity):
             n = len(STATE.lab_effects)
             self.lab_button.text = (f'ACCESSIBILITY LAB ({n} active)' if n
                                     else 'ACCESSIBILITY LAB')
+            for key, button in self.dis_buttons.items():
+                button.color = (DISABILITIES[key]['color']
+                                if key == (STATE.disability or 'none')
+                                else Color(.13, .15, .2, .9))
+            self._refresh_desc()
         LabPanel(on_close=back)
 
     def start_game(self):
@@ -195,5 +214,5 @@ class MainMenu(Entity):
         self.cam_pivot.rotation_y += 5 * time.dt
 
     def input(self, key):
-        if key == 'escape':
+        if key == 'escape' and self.ui.enabled and self.accept_input:
             application.quit()

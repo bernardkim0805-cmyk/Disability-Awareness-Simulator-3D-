@@ -123,6 +123,13 @@ category tabs, per-effect toggle + intensity slider, info pane, presets
 (mild/moderate/severe), split-screen toggle, live preview on the menu
 plaza, disclaimer. New condition = one class + one registry entry.
 
+Lab selection rules live in `simulator/lab_state.py`, independently of Ursina UI.
+This keeps original-experience exclusivity, effect compatibility, presets, reset,
+active summaries, and educational metadata headlessly testable. The UI applies
+changes live; there is no hidden draft state. Original visual and ADHD overlays
+begin in scenarios because applying them to `camera.ui` would obscure the lab's
+own accessible controls. The schizophrenia world-space preview remains available.
+
 ## Adding a new disability module
 
 1. `config.py`: add an entry to `DISABILITIES` (name, icon, color, desc) and
