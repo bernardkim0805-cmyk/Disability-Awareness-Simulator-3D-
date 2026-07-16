@@ -86,6 +86,43 @@ Accessibility routing (`AudioManager`, singleton via `get_audio()`):
 Rendering quality: `main.py` requests 8x MSAA
 (`framebuffer-multisample 1`, `multisamples 8`, `AntialiasAttrib.MMultisample`).
 
+## Effect architecture — `simulator/fx/`
+
+`DisabilityEffect` (core.py) defines the lifecycle every condition follows:
+`initialize() · enable() · disable() · setIntensity(0..1) · update(dt) ·
+cleanup()`. Category bases: `VisualEffect` (contributes parameters, never
+touches the GPU), `AudioEffect` (installs AudioManager hooks),
+`MovementEffect` (additive camera/player offsets, removed each frame),
+`CognitiveEffect` (gameplay info; must restore what it hides).
+`EffectStack` builds from `STATE.lab_effects`, merges visual params into the
+single **GLSL 1.20 post-process pass** (postfx.py — the newest GLSL this
+Mac accepts; one fullscreen pass regardless of how many effects stack),
+and handles hold-N normal-vision compare + split-screen (left normal /
+right simulated, done in-shader).
+
+Implemented conditions (registry.py holds the educational content —
+medical, gameplay, misconception, assistive tech, references):
+- **Visual**: glaucoma, AMD (noise-shaped central scotoma), cataracts,
+  diabetic retinopathy (+CPU floater layer), retinitis pigmentosa,
+  protan/deutan/tritanopia (Machado 2009 matrices), visual snow (+entoptic
+  specks), migraine aura (scintillating scotoma on a timed cycle),
+  oscillopsia.
+- **Audio**: hearing loss (low-passed "muffled" variants of every cue +
+  attenuation), tinnitus (synthesized stereo loop, pitch/side
+  configurable), auditory processing disorder (onset delay + speech echo).
+- **Movement**: parkinsonian tremor (resting tremor + bradykinesia ramp),
+  essential tremor (action tremor), vestibular disorder (roll drift, step
+  sway, lateral imbalance).
+- **Cognitive**: prosopagnosia (face_parts blanked; dialogue names become
+  clothing descriptors), hemispatial neglect (left HUD/markers dropped),
+  ADHD attention capture (F to refocus), memory impairment (objective
+  fades; J = journal).
+
+UI: `simulator/lab.py` — Accessibility Simulator panel from the main menu:
+category tabs, per-effect toggle + intensity slider, info pane, presets
+(mild/moderate/severe), split-screen toggle, live preview on the menu
+plaza, disclaimer. New condition = one class + one registry entry.
+
 ## Adding a new disability module
 
 1. `config.py`: add an entry to `DISABILITIES` (name, icon, color, desc) and

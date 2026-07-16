@@ -23,8 +23,15 @@ Entity.shader = property(lambda self: getattr(self, '_shader', None),
                          lambda self, value: setattr(self, '_shader', None))
 Sky.default_values = dict(Sky.default_values, shader=None)
 
-app = Ursina(title='Walk In My World — Disability Awareness Simulator',
-             development_mode=False)
+try:
+    app = Ursina(title='Walk In My World — Disability Awareness Simulator',
+                 development_mode=False)
+except Exception:
+    # some GPUs refuse a multisampled window — retry without anti-aliasing
+    loadPrcFileData('', 'framebuffer-multisample 0')
+    loadPrcFileData('', 'multisamples 0')
+    app = Ursina(title='Walk In My World — Disability Awareness Simulator',
+                 development_mode=False)
 
 # entities created during ursina's own import already had shaders applied —
 # strip those so they render through the fixed-function pipeline too

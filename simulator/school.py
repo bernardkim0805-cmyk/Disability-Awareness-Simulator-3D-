@@ -385,10 +385,10 @@ class SchoolTestScenario(BaseScenario):
 
     def input(self, key):
         if self.test and not self.finished:
+            # TestUI is an entity, so ursina already delivers keys to it
+            # directly — forwarding here would grade every answer twice
             if key == 'escape':
                 self.exit_to_menu()
-                return
-            self.test.input(key)
             return
         super().input(key)
         if key == 'e' and not self.test and not self.dialogue.enabled:
@@ -492,13 +492,13 @@ class TestUI(Entity):
             self.feedback.color = Color(.5, .9, 1, 1)
             return
         if key in ('1', '2', '3'):
-            _, _, correct = QUESTIONS[self.q_index]
+            _, options, correct = QUESTIONS[self.q_index]
             if int(key) - 1 == correct:
                 self.score += 1
                 self.feedback.text = 'correct!'
                 self.feedback.color = Color(.4, .95, .5, 1)
             else:
-                self.feedback.text = 'wrong'
+                self.feedback.text = f'wrong — the answer was {correct + 1}) {options[correct]}'
                 self.feedback.color = Color(.95, .4, .4, 1)
             self.q_index += 1
             self.fake_opt.text = ''

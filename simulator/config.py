@@ -7,6 +7,9 @@ class GameState:
         self.disability = None      # key into DISABILITIES, or None = 'none'
         self.scenario = 'school'    # key into SCENARIOS
         self.blindness = 0.55       # 0..1, only used by 'visual'
+        self.lab_effects = {}       # {effect_id: intensity} from the lab panel
+        self.lab_split = False      # split-screen comparison mode
+        self.active_fx = set()      # effect ids currently running in-scene
 
     @property
     def is_(self):

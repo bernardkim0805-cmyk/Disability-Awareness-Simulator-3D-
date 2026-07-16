@@ -6,10 +6,20 @@ breeze through the same tasks.
 
 ## Run it
 
+Requires Python 3.10+ on Windows, macOS, or Linux.
+
 ```bash
+# from the project folder — create a FRESH virtual environment on each machine
+python3 -m venv .venv                # Windows: py -m venv .venv
+source .venv/bin/activate            # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-python3 main.py
+python main.py
 ```
+
+Do **not** copy a `.venv` folder from another computer — virtual environments
+contain machine-specific binaries and must be recreated locally. Text-to-speech
+narration (visual-impairment mode) uses the built-in voice on macOS only; the
+rest of the game is cross-platform.
 
 ## The menu
 
