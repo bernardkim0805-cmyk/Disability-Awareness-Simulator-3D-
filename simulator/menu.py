@@ -16,8 +16,10 @@ def _scenario_class(key):
         from .school import SchoolTestScenario
         from .train import TrainScenario
         from .zombies import ZombieEscapeScenario
+        from .kitchen import KitchenScenario
         SCENARIO_CLASSES.update(school=SchoolTestScenario, train=TrainScenario,
-                                zombies=ZombieEscapeScenario)
+                                zombies=ZombieEscapeScenario,
+                                kitchen=KitchenScenario)
     return SCENARIO_CLASSES[key]
 
 

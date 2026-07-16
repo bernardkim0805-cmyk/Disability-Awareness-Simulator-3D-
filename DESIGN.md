@@ -130,6 +130,32 @@ changes live; there is no hidden draft state. Original visual and ADHD overlays
 begin in scenarios because applying them to `camera.ui` would obscure the lab's
 own accessible controls. The schizophrenia world-space preview remains available.
 
+## Home Kitchen scenario — `simulator/kitchen/` (self-contained package)
+
+Kept in its own package so parallel work elsewhere never conflicts; the only
+shared-file touch points are the `SCENARIOS['kitchen']` entry (config.py)
+and one import in `menu._scenario_class`.
+
+- Randomized per run: layout (apartment / family / cluttered), lighting
+  (day / evening / flicker — flicker modulates the SceneLights ambient node
+  live), ambience (fridge hum + water/radio/chatter; all synthesized in
+  `kitchen/sounds.py` as `kitchen_*` cues so audio.py stays untouched).
+- Cooking chain: read recipe -> gather (fridge/cupboard/counter) -> chop
+  cutscene -> stove -> serve. Health drops with burns/cuts; fire ends runs.
+- `reader.py`: reading difficulty done right — place-marker jumps (R to
+  re-anchor), word-by-word recognition (SPACE), mirrored letters and
+  confusable-word swaps, unread text rendered as `~~~` shapes, plus a
+  comprehension check. Severity from dyslexia mode / lab conditions.
+- `cutscene.py`: chopping close-up (hand, knife, board, carrot) built in a
+  diorama 60 units below the map; rhythm-timed slices; motor conditions add
+  wobble + input latency + smaller windows; misses cost fingers.
+- Accessibility mechanics: white-on-white counters/plates + clear glasses
+  (low contrast by design), tiny stove knobs + pale indicator, sound-only
+  timer beep (deaf mode hears nothing) with a big flashing beacon above the
+  stove as the visual alternative, glaucoma culls peripheral props until
+  looked toward, ADHD gets loud phone notifications + blocking interrupt
+  tasks (P / door).
+
 ## Adding a new disability module
 
 1. `config.py`: add an entry to `DISABILITIES` (name, icon, color, desc) and

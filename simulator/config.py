@@ -80,6 +80,11 @@ SCENARIOS = {
         icon='<NIGHT>',
         desc='Night has fallen and the streets are not safe.\nReach the safehouse before they reach you.',
     ),
+    'kitchen': dict(
+        name='Home Kitchen',
+        icon='<COOK>',
+        desc='Cook a random recipe in a random kitchen.\nKnives, hot pans and timers are less forgiving\nthan they look.',
+    ),
 }
 
 # People who mock you, keyed by scenario then disability. `lines` spawns a
