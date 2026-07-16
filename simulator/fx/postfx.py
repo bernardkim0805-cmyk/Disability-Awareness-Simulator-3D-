@@ -179,22 +179,44 @@ class PostFX:
                     bypass=1.0, split=0.0)
 
     def __init__(self):
-        self.shader = Shader(name='disability_postfx', language=Shader.GLSL,
-                             vertex=VERTEX, fragment=FRAGMENT)
+        self.shader = None
         self.attached = False
+        self.available = True
+        self.error = None
         self.time = 0.0
 
     def default_params(self):
         return dict(self.DEFAULTS)
 
     def _attach(self):
-        if not self.attached:
+        if self.attached:
+            return True
+        if not self.available:
+            return False
+        try:
+            self.shader = Shader(name='disability_postfx', language=Shader.GLSL,
+                                 vertex=VERTEX, fragment=FRAGMENT)
             camera.shader = self.shader
+            if not getattr(camera, 'filter_quad', None):
+                raise RuntimeError('Ursina did not create a post-process filter quad')
             self.attached = True
+            return True
+        except Exception as error:
+            # Unsupported/legacy GPUs keep the unfiltered scene rather than
+            # crashing the simulator. The original non-GLSL experiences remain usable.
+            self.error = str(error)
+            self.available = False
+            self.attached = False
+            try:
+                camera.shader = None
+            except Exception:
+                pass
+            return False
 
     def apply(self, params):
         """Upload the merged parameter set. Called once per frame."""
-        self._attach()
+        if not self._attach():
+            return
         from ursina import time as utime
         self.time += utime.dt
         q = camera.filter_quad

@@ -56,3 +56,29 @@ A rotating 3D plaza sits behind the menu. Pick one **experience** and one **scen
 - **[ / ]** adjust blindness (visual impairment) · **Esc** back to menu / quit
 
 Every scenario ends with a short reflection on what just happened and why it matters.
+
+## Accessibility Lab
+
+The lab separates the seven original full experience modes from newer stackable
+visual, hearing, movement, and cognitive effects. Choose one original experience,
+then add compatible individual effects and adjust their intensity. Baseline clears
+all simulations. Combinations that would hide or duplicate one another are visibly
+blocked rather than silently producing misleading results.
+
+Controls in the lab: number keys `1`-`5` switch categories, arrow keys select,
+`Space`/`Enter` toggles, `P` cycles presets, `S` toggles split-screen, `D` opens
+the selected original experience's live comparison space, `R` safely disables
+all effects, and `Esc` applies and returns. The main menu also supports `1`-`7`
+for experiences, `8`/`9`/`0` for scenarios, `L` for the lab, and `Enter` to start.
+During scenarios, hold `N` to compare normal vision when visual effects are active.
+
+Blocked combinations are simulator compatibility limitations: they prevent two
+implementations from controlling or hiding the same game output. They are not
+claims that the corresponding real conditions cannot coexist.
+
+For deterministic development checks, launch a scenario directly without changing
+normal menu behavior:
+
+```bash
+python main.py --scenario train --window-size 1280x720
+```

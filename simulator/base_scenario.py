@@ -19,6 +19,7 @@ class BaseScenario(Entity):
         super().__init__(**kwargs)
         self.finished = False
         self.npcs = []
+        self.end_ui = None
 
         if self.sky_color:
             window.color = self.sky_color
@@ -34,15 +35,21 @@ class BaseScenario(Entity):
             from .fx.core import EffectStack
             self.fx_stack = EffectStack(context=self)
 
+        self.hud = Entity(parent=camera.ui)
+        Entity(parent=self.hud, model='quad', color=Color(.04, .05, .08, .78),
+               position=(0, .455), scale=(1.15, .075), z=.5)
         d = DISABILITIES[STATE.disability or 'none']
-        Text(parent=camera.ui, text=f"{d['icon']} {d['name']}", position=(-.86, .40),
+        Text(parent=self.hud, text=f"{d['icon']} {d['name']}", position=(-.86, .43),
              scale=.85, color=Color(.8, .8, .8, .9))
-        self.objective_text = Text(parent=camera.ui, text='', origin=(0, 0), y=.47,
-                                   scale=1.1, color=Color(1, 1, .6, 1))
-        self.interact_hint = Text(parent=camera.ui, text='', origin=(0, 0), y=-.2,
+        self.objective_text = Text(parent=self.hud, text='', origin=(0, 0), y=.46,
+                                   scale=1.0, color=Color(1, 1, .6, 1))
+        self.interact_hint = Text(parent=self.hud, text='', origin=(0, 0), y=-.2,
                                   scale=.9, color=Color(.9, .9, .9, .9))
-        Text(parent=camera.ui, text='WASD move · mouse look · E interact · Esc quit to menu',
-             position=(0, -.48), origin=(0, 0), scale=.75, color=Color(.55, .55, .55, 1))
+        controls = 'WASD move · mouse look · E interact · Esc menu'
+        if STATE.lab_effects:
+            controls += ' · hold N compare'
+        Text(parent=self.hud, text=controls, position=(0, -.48), origin=(0, 0),
+             scale=.75, color=Color(.55, .55, .55, 1))
 
         self.build()
         mouse.locked = True
@@ -147,12 +154,15 @@ class BaseScenario(Entity):
         audio.speak(f'{title}. {summary}')
 
         ui = Entity(parent=camera.ui)
+        self.end_ui = ui
         Entity(parent=ui, model='quad', color=Color(0, 0, 0, .88), scale=(2, 2), z=1)
+        Entity(parent=ui, model='quad', color=Color(.07, .08, .12, .98),
+               scale=(1.15, .78), z=.5)
         Text(parent=ui, text=title, origin=(0, 0), y=.32, scale=2.2,
              color=Color(.4, .9, .5, 1) if success else Color(.95, .4, .4, 1))
         Text(parent=ui, text=summary, origin=(0, 0), y=.16, scale=1.1,
              color=Color(.95, .95, .95, 1))
-        Text(parent=ui, text='— why this matters —', origin=(0, 0), y=.02, scale=.9,
+        Text(parent=ui, text='WHY THIS MATTERS', origin=(0, 0), y=.02, scale=.82,
              color=Color(.7, .7, .5, 1))
         Text(parent=ui, text=REFLECTIONS[STATE.disability or 'none'], origin=(0, 0),
              y=-.12, scale=1, color=Color(.85, .85, 1, 1))
@@ -190,13 +200,12 @@ class BaseScenario(Entity):
         destroy(self.dialogue)
         destroy(self.announcer)
         destroy(self.effects)
+        destroy(self.hud)
+        if self.end_ui:
+            destroy(self.end_ui)
+            self.end_ui = None
         if hasattr(self, 'sky'):
             destroy(self.sky)
         for npc in self.npcs:
             destroy(npc)
-        # UI texts parented to camera.ui but created via helpers hang off camera.ui;
-        # destroy everything we own by destroying self last (children go with it).
-        for child in camera.ui.children[:]:
-            if child not in (camera.overlay,):
-                destroy(child)
         destroy(self)

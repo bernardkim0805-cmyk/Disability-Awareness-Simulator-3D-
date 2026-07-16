@@ -32,7 +32,8 @@ def _write_wav(path, samples, stereo=False):
     def clamp(s):
         return max(-32767, min(32767, int(s * 32767)))
     if stereo:
-        frames = b''.join(struct.pack('<hh', clamp(l), clamp(r)) for l, r in samples)
+        frames = b''.join(struct.pack('<hh', clamp(left), clamp(right))
+                          for left, right in samples)
     else:
         frames = b''.join(struct.pack('<h', clamp(s)) for s in samples)
     with wave.open(str(path), 'w') as f:
