@@ -26,15 +26,55 @@ SR = 22050
 
 
 # ------------------------------------------------------------- synthesis
-def _write_wav(path, samples):
+def _write_wav(path, samples, stereo=False):
+    """samples: floats in [-1, 1]; or (left, right) tuples when stereo."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    frames = b''.join(struct.pack('<h', max(-32767, min(32767, int(s * 32767))))
-                      for s in samples)
+    def clamp(s):
+        return max(-32767, min(32767, int(s * 32767)))
+    if stereo:
+        frames = b''.join(struct.pack('<hh', clamp(left), clamp(right))
+                          for left, right in samples)
+    else:
+        frames = b''.join(struct.pack('<h', clamp(s)) for s in samples)
     with wave.open(str(path), 'w') as f:
-        f.setnchannels(1)
+        f.setnchannels(2 if stereo else 1)
         f.setsampwidth(2)
         f.setframerate(SR)
         f.writeframes(frames)
+
+
+def _lowpass(samples, alpha=.06):
+    """One-pole low-pass filter: y[n] = y[n-1] + a*(x[n]-y[n-1]).
+    Small alpha keeps only low frequencies — the classic 'muffled through
+    a wall' character of conductive/sensorineural high-frequency loss."""
+    out, y = [], 0.0
+    for x in samples:
+        y += alpha * (x - y)
+        out.append(y * 1.6)          # make up some of the lost energy
+    return out
+
+
+def ensure_muffled_assets():
+    """Low-passed variant of every cue, used by the hearing-loss effect."""
+    for name, gen in CUES.items():
+        path = AUDIO_DIR / f'{name}_muffled.wav'
+        if not path.exists():
+            _write_wav(path, _lowpass(gen()))
+
+
+def tinnitus_path(freq=6000, side='both'):
+    """A 4 s looping tinnitus tone: pure sine with slow amplitude shimmer.
+    side: 'left' | 'right' | 'both' — rendered as a stereo file."""
+    path = AUDIO_DIR / f'tinnitus_{int(freq)}_{side}.wav'
+    if not path.exists():
+        gains = {'left': (1, 0), 'right': (0, 1), 'both': (.7, .7)}[side]
+        frames = []
+        for i in range(int(4 * SR)):
+            t = i / SR
+            s = math.sin(6.2832 * freq * t) * (.85 + .15 * math.sin(6.2832 * .9 * t))
+            frames.append((s * gains[0], s * gains[1]))
+        _write_wav(path, frames, stereo=True)
+    return path
 
 
 def _tone(freq, dur, vol=.5, decay=4.0, vibrato=0.0):
@@ -103,6 +143,11 @@ class AudioManager:
     def __init__(self):
         ensure_assets()
         self.playing = []
+        # hooks installed by AudioEffect subclasses (fx/audio_fx.py):
+        self.volume_scale = 1.0      # hearing loss attenuation
+        self.muffle = False          # hearing loss frequency roll-off
+        self.delay_max = 0.0         # auditory processing: onset delay (s)
+        self.echo = 0.0              # auditory processing: speech smearing
 
     def hearing(self):
         return STATE.disability != 'deaf'
@@ -119,10 +164,23 @@ class AudioManager:
     def play(self, cue, volume=.5, loop=False):
         if not self.hearing():
             return None
+        if self.muffle and (AUDIO_DIR / f'{cue}_muffled.wav').exists():
+            cue = f'{cue}_muffled'
+        volume *= self.volume_scale
+        if self.delay_max > 0 and not loop:
+            # auditory processing disorder: sounds land noticeably late
+            import random as _r
+            from ursina import invoke, Func
+            invoke(Func(self._start, AUDIO_DIR / f'{cue}.wav', volume, loop),
+                   delay=_r.uniform(.12, self.delay_max))
+            return None
+        return self._start(AUDIO_DIR / f'{cue}.wav', volume, loop)
+
+    def _start(self, path, volume, loop=False):
         try:
             from ursina import Audio
-            a = Audio(self._asset_name(AUDIO_DIR / f'{cue}.wav'), volume=volume,
-                      loop=loop, autoplay=True)
+            a = Audio(self._asset_name(path), volume=volume, loop=loop,
+                      autoplay=True)
             self.playing.append(a)
             return a
         except Exception:
@@ -156,12 +214,12 @@ class AudioManager:
     def _play_file(self, path, volume):
         if not self.hearing():
             return
-        try:
-            from ursina import Audio
-            self.playing.append(Audio(self._asset_name(path), volume=volume,
-                                      autoplay=True))
-        except Exception:
-            pass
+        volume *= self.volume_scale
+        self._start(path, volume)
+        if self.echo > 0:
+            # smeared duplicate slightly later: speech loses its crisp onset
+            from ursina import invoke, Func
+            invoke(Func(self._start, path, volume * self.echo * .6), delay=.13)
 
     def stop_all(self):
         for a in self.playing:

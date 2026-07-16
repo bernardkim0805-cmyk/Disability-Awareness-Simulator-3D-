@@ -29,6 +29,10 @@ class BaseScenario(Entity):
         self.dialogue = DialogueBox()
         self.announcer = Announcer()
         self.effects = EffectsManager(player=self.player, announcer=self.announcer)
+        self.fx_stack = None
+        if STATE.lab_effects:
+            from .fx.core import EffectStack
+            self.fx_stack = EffectStack(context=self)
 
         d = DISABILITIES[STATE.disability or 'none']
         Text(parent=camera.ui, text=f"{d['icon']} {d['name']}", position=(-.86, .40),
@@ -119,7 +123,13 @@ class BaseScenario(Entity):
                 def done():
                     self.player.enabled = True
                     mouse.locked = True
-                self.dialogue.say(npc.npc_name, npc.lines, on_done=done,
+                display_name = npc.npc_name
+                if 'prosopagnosia' in STATE.active_fx:
+                    from .fx.cognitive import shirt_descriptor
+                    display_name = shirt_descriptor(npc)
+                elif 'memory' in STATE.active_fx:
+                    display_name = '???'
+                self.dialogue.say(display_name, npc.lines, on_done=done,
                                   speaker_entity=npc)
 
     # -------------------------------------------------------------- end states
@@ -164,6 +174,9 @@ class BaseScenario(Entity):
     def cleanup(self):
         from .audio import get_audio
         get_audio().stop_all()
+        if self.fx_stack:
+            self.fx_stack.cleanup()
+            self.fx_stack = None
         if hasattr(self, 'lights'):
             self.lights.destroy()
         camera.parent = scene

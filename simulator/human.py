@@ -67,8 +67,8 @@ class Human(Entity):
         for side in (-.105, .105):                                # ears
             Entity(parent=self.head, model='sphere', color=skin,
                    scale=(.035, .055, .03), position=(side, 0, 0))
-        Entity(parent=self.head, model='sphere', color=skin,      # nose
-               scale=(.03, .045, .035), position=(0, -.01, .112))
+        self._nose = Entity(parent=self.head, model='sphere', color=skin,
+                            scale=(.03, .045, .035), position=(0, -.01, .112))
 
         # eyes: white + iris + pupil + catchlight, grouped so blinking squashes them
         self.eyes = []
@@ -96,10 +96,11 @@ class Human(Entity):
         self.blink_timer = random.uniform(1.5, 5)
 
         # nostrils, cheekbones, blush and freckles
+        self._nostrils = []
         for side in (-.012, .012):
-            Entity(parent=self.head, model='sphere',
+            self._nostrils.append(Entity(parent=self.head, model='sphere',
                    color=Color(skin.x * .55, skin.y * .5, skin.z * .5, 1),
-                   scale=(.009, .007, .006), position=(side, -.038, .125))
+                   scale=(.009, .007, .006), position=(side, -.038, .125)))
         for side in (-.075, .075):                                    # cheekbones
             Entity(parent=self.head, model='sphere', color=skin,
                    scale=(.05, .04, .03), position=(side, -.04, .075))
@@ -163,6 +164,12 @@ class Human(Entity):
 
         self.expression = 'neutral'
         self.set_expression('neutral')
+        # registry used by the prosopagnosia simulation to blank identity cues
+        self.face_parts = (self.eyes + self.brows + self._nostrils
+                           + [self._nose, self.mouth_open_hole, self.teeth,
+                              self.mouth_mid, self.lower_lip,
+                              self.mouth_l, self.mouth_r])
+        self.shirt_color = shirt
 
         # ---- arms (shoulder pivot -> elbow pivot) ---------------------------
         self.arms = {}

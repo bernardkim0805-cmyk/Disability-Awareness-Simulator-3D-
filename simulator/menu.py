@@ -130,6 +130,12 @@ class MainMenu(Entity):
                                    position=(0, -.40), color=Color(.15, .45, .25, 1),
                                    highlight_color=Color(.2, .6, .35, 1),
                                    on_click=self.start_game)
+        n_active = len(STATE.lab_effects)
+        lab_label = f'ACCESSIBILITY LAB ({n_active} active)' if n_active else 'ACCESSIBILITY LAB'
+        self.lab_button = Button(parent=self.ui, text=lab_label, scale=(.3, .05),
+                                 position=(.52, -.05), color=Color(.3, .25, .45, 1),
+                                 highlight_color=Color(.4, .35, .55, 1),
+                                 on_click=self.open_lab)
         Text(parent=self.ui, text='in every scenario the other people around you find easy\n'
                                   'what you may find hard — talk to them with E',
              origin=(0, 0), y=-.47, scale=.75, color=Color(.6, .6, .65, 1))
@@ -160,6 +166,16 @@ class MainMenu(Entity):
 
     def _on_blindness(self):
         STATE.blindness = self.blind_slider.value / 100
+
+    def open_lab(self):
+        from .lab import LabPanel
+        self.ui.enabled = False
+        def back():
+            self.ui.enabled = True
+            n = len(STATE.lab_effects)
+            self.lab_button.text = (f'ACCESSIBILITY LAB ({n} active)' if n
+                                    else 'ACCESSIBILITY LAB')
+        LabPanel(on_close=back)
 
     def start_game(self):
         cls = _scenario_class(STATE.scenario)

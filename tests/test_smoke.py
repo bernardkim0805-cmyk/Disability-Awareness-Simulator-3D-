@@ -11,7 +11,15 @@ def test_core_modules_import_without_starting_game() -> None:
         "simulator.config",
         "simulator.dialogue",
         "simulator.effects",
+        "simulator.fx.audio_fx",
+        "simulator.fx.cognitive",
+        "simulator.fx.core",
+        "simulator.fx.movement",
+        "simulator.fx.postfx",
+        "simulator.fx.registry",
+        "simulator.fx.visual",
         "simulator.human",
+        "simulator.lab",
         "simulator.npc",
         "simulator.player",
         "simulator.world",
@@ -30,4 +38,3 @@ def test_default_game_state_is_valid() -> None:
     assert state.disability is None
     assert state.scenario in SCENARIOS
     assert 0 <= state.blindness <= 1
-
