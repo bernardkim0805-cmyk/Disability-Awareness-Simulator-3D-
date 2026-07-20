@@ -98,11 +98,16 @@ void main() {
     // Oscillopsia motion blur: average with a second, offset sample.
     if (u_osc > 0.001)
         c = mix(c, scene(p + vec2(u_osc * 0.008, 0.0)), 0.5);
-    // Fluctuating acuity: 4-tap box blur, radius scales with u_blur.
+    // Progressive defocus: two weighted rings keep low settings subtle while
+    // making the top of the original visual-mode scale unmistakably blurry.
     if (u_blur > 0.001) {
-        float r = u_blur * 0.004;
-        c = (c + scene(p + vec2(r, r)) + scene(p + vec2(-r, r))
-               + scene(p + vec2(r, -r)) + scene(p + vec2(-r, -r))) / 5.0;
+        float r = 0.001 + u_blur * u_blur * 0.011;
+        vec3 near_ring = scene(p + vec2(r, 0.0)) + scene(p - vec2(r, 0.0))
+                       + scene(p + vec2(0.0, r)) + scene(p - vec2(0.0, r));
+        float d = r * 0.7071;
+        vec3 far_ring = scene(p + vec2(d, d)) + scene(p + vec2(-d, d))
+                      + scene(p + vec2(d, -d)) + scene(p + vec2(-d, -d));
+        c = (c * 2.0 + near_ring + far_ring) / 10.0;
     }
 
     // ---- color vision deficiency (Machado 2009 transformation) -----------

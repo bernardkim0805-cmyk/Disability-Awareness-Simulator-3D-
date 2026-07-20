@@ -28,7 +28,7 @@ WHISPERS = [
 
 class EffectsManager(Entity):
     """Attach once per scenario. Reads STATE.disability and drives overlays,
-    distractions, hallucinations and the blindness level."""
+    distractions, hallucinations and the visual-blur level."""
 
     def __init__(self, player=None, announcer=None, **kwargs):
         super().__init__(**kwargs)
@@ -55,19 +55,19 @@ class EffectsManager(Entity):
             self.shadow_figure = self._make_shadow()
         elif d == 'visual':
             self._apply_blindness()
-            Text(parent=self.ui, text='[ and ] adjust blindness', position=(-.86, .44),
+            Text(parent=self.ui, text='[ and ] adjust blur', position=(-.86, .44),
                  scale=.8, color=Color(.7, .7, .7, .8))
 
     # ------------------------------------------------------------------ visual
     def _apply_blindness(self):
-        from panda3d.core import Fog
-        b = STATE.blindness
-        camera.overlay.color = Color(0, 0, 0, min(.985, b))
-        fog = scene.fog
-        fog.setMode(Fog.MExponential)
-        fog.setColor(Color(.05, .05, .06, 1))
-        fog.setExpDensity(min(1, b * .2))
-        scene.setFog(fog)
+        """Clear the legacy darkness/fog treatment.
+
+        EffectStack reads STATE.blindness every frame and maps it to the
+        post-process blur.  Keeping this method lets the existing slider
+        callbacks request an immediate refresh without leaving old fog behind.
+        """
+        camera.overlay.color = Color(0, 0, 0, 0)
+        scene.clearFog()
 
     # ------------------------------------------------------------ schizophrenia
     def _make_shadow(self):
@@ -164,7 +164,7 @@ class EffectsManager(Entity):
             STATE.blindness = round(min(1, max(0, STATE.blindness + (.05 if key == ']' else -.05))), 2)
             self._apply_blindness()
             if self.announcer:
-                self.announcer.visual(f'blindness: {int(STATE.blindness * 100)}%', duration=1.5)
+                self.announcer.visual(f'blur: {int(STATE.blindness * 100)}%', duration=1.5)
 
     def on_destroy(self):
         if self.shadow_figure:

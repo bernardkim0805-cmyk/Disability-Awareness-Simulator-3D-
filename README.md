@@ -127,8 +127,8 @@ Each experience should be discussed using three questions:
 
 ### Visual impairment
 
-- **In the game:** A darkness-and-fog overlay is adjustable from the menu or with **[** and
-  **]**. macOS narration provides an audio channel for selected text.
+- **In the game:** A progressive defocus-blur effect is adjustable from the menu or with
+  **[** and **]**. macOS narration provides an audio channel for selected text.
 - **Research connection:** Visual impairment includes many different patterns and causes;
   it is not synonymous with complete darkness. WHO notes that vision rehabilitation and
   tools such as mobility training, braille, and digital assistive technologies can support
@@ -136,9 +136,9 @@ Each experience should be discussed using three questions:
 - **Design lesson:** Contrast, scalable text, screen-reader-compatible information, audio
   description, tactile cues, and consistent navigation provide alternatives to vision-only
   information.
-- **Limit:** Uniform darkness and fog are broad game abstractions, not a representation of
-  most eye conditions. The Accessibility Lab contains more specific—but still simplified—
-  field-loss and visual-disturbance effects.
+- **Limit:** Uniform blur is a broad game abstraction, not a representation of most eye
+  conditions. The Accessibility Lab contains more specific—but still simplified—field-loss
+  and visual-disturbance effects.
 
 ### Deaf / hard of hearing
 
@@ -291,7 +291,7 @@ over or hide the same game output; they do not mean real conditions cannot coexi
 - **1 / 2 / 3** answer school-test questions.
 - **V** toggles school accommodations.
 - **F** returns focus during ADHD attention-capture effects.
-- **[ / ]** adjusts the original visual-impairment overlay.
+- **[ / ]** adjusts the original visual-impairment blur.
 - Hold **N** to compare the normal rendering when compatible visual lab effects are active.
 - **Esc** returns to the menu or exits.
 

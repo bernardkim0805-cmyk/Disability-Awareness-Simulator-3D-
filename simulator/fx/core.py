@@ -131,7 +131,11 @@ class EffectStack(Entity):
         from .postfx import get_postfx
         fx = get_postfx()
         params = fx.default_params()
-        any_visual = False
+        # The original visual-impairment experience is deliberately a broad
+        # blur analogy. Condition-specific field loss remains in lab effects.
+        any_visual = STATE.disability == 'visual'
+        if any_visual:
+            params['blur'] = max(params['blur'], STATE.blindness)
         for eff in self.effects:
             if not eff.enabled:
                 continue

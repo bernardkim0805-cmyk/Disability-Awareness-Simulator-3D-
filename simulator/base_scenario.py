@@ -35,7 +35,7 @@ class BaseScenario(Entity):
         self.announcer = Announcer()
         self.effects = EffectsManager(player=self.player, announcer=self.announcer)
         self.fx_stack = None
-        if STATE.lab_effects:
+        if STATE.lab_effects or STATE.disability == 'visual':
             from .fx.core import EffectStack
             self.fx_stack = EffectStack(context=self)
 

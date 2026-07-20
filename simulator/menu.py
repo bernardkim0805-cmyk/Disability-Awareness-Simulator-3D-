@@ -139,8 +139,8 @@ class MainMenu(Entity):
         self.active_text = Text(parent=self.ui, text='', position=(.36, -.26),
                                 scale=.62, color=Color(.68, .88, .8, 1))
 
-        # blindness slider — appears only for visual impairment
-        self.blind_label = Text(parent=self.ui, text='VISUAL INTENSITY', origin=(0, 0),
+        # blur slider — appears only for visual impairment
+        self.blind_label = Text(parent=self.ui, text='BLUR INTENSITY', origin=(0, 0),
                                 position=(-.52, -.245), scale=.7,
                                 color=Color(.8, .8, .8, 1), enabled=False)
         self.blind_slider = Slider(min=0, max=100, default=int(STATE.blindness * 100),

@@ -109,3 +109,33 @@ def test_postfx_falls_back_when_shader_is_unsupported(monkeypatch) -> None:
     assert pipeline._attach() is False
     assert pipeline.available is False
     pipeline.apply(pipeline.default_params())
+
+
+def test_original_visual_experience_contributes_scaled_blur(monkeypatch) -> None:
+    from types import SimpleNamespace
+
+    from simulator.fx import core
+
+    applied = {}
+
+    class FakePostFX:
+        def default_params(self):
+            return {"blur": 0.0, "bypass": 1.0, "split": 0.0}
+
+        def apply(self, params):
+            applied.update(params)
+
+    monkeypatch.setattr(core, "get_postfx", lambda: FakePostFX(), raising=False)
+    monkeypatch.setattr(core, "utime", SimpleNamespace(dt=.016))
+    monkeypatch.setattr(core.STATE, "disability", "visual")
+    monkeypatch.setattr(core.STATE, "blindness", .73)
+    monkeypatch.setattr(core.STATE, "lab_split", False)
+
+    stack = SimpleNamespace(effects=[], compare_held=False)
+    # Redirect the function-local import used by EffectStack.update.
+    import simulator.fx.postfx as postfx
+    monkeypatch.setattr(postfx, "get_postfx", lambda: FakePostFX())
+    core.EffectStack.update(stack)
+
+    assert applied["blur"] == .73
+    assert applied["bypass"] == 0.0

@@ -81,6 +81,18 @@ def _vision_severity():
     return s, central
 
 
+def _paper_blur_intensity(accommodations=False):
+    """Return the original visual mode's blur for camera-UI exam text.
+
+    The scene post-process blurs the 3D boards but intentionally excludes UI,
+    so the exam paper needs a matching UI treatment. Accommodations keep the
+    large-print paper sharp as the accessible comparison.
+    """
+    if accommodations or STATE.disability != 'visual':
+        return 0.0
+    return STATE.blindness
+
+
 def _mask_center(line, frac=.5):
     """Macular degeneration: the middle of wherever you look is gone."""
     n = len(line)
@@ -592,6 +604,36 @@ class TestUI(Entity):
                              color=Color(.7, .45, .9, .9))
         self.feedback = Text(parent=self, text='', origin=(0, 0), y=-.27, scale=1.1,
                              color=Color(1, 1, 1, 1))
+        # PostFX deliberately leaves camera.ui sharp. These offset copies
+        # reproduce its progressive defocus on the exam paper itself.
+        sources = [self.timer_text, self.progress, self.q_text, *self.opts,
+                   self.fake_opt, self.feedback]
+        self.paper_blur = []
+        for source in sources:
+            source._paper_alpha = source.color.a
+            ghosts = [Text(parent=self, text='', origin=source.origin,
+                           color=Color(1, 1, 1, 0), enabled=False)
+                      for _ in range(8)]
+            self.paper_blur.append((source, ghosts))
+
+    def _update_paper_blur(self):
+        intensity = _paper_blur_intensity(self.accommodations)
+        directions = ((1, 0), (-1, 0), (0, 1), (0, -1),
+                      (.707, .707), (-.707, .707), (.707, -.707), (-.707, -.707))
+        radius = .0015 + intensity * intensity * .012
+        for source, ghosts in self.paper_blur:
+            base_alpha = source._paper_alpha
+            source.color = Color(source.color.r, source.color.g, source.color.b,
+                                 base_alpha * (.38 if intensity else 1))
+            for ghost, (dx, dy) in zip(ghosts, directions):
+                ghost.enabled = intensity > .001
+                if not ghost.enabled:
+                    continue
+                ghost.text = source.text
+                ghost.position = (source.x + dx * radius, source.y + dy * radius, source.z)
+                ghost.scale = source.scale
+                ghost.color = Color(source.color.r, source.color.g, source.color.b,
+                                    base_alpha * .105)
 
     def tick(self, dt, effects):
         self.timer -= dt
@@ -610,6 +652,7 @@ class TestUI(Entity):
                                 if self.blocked_by is None else '')
             for t in self.opts:
                 t.text = ''
+            self._update_paper_blur()
             return
 
         if STATE.disability == 'dyslexia' and not self.accommodations:
@@ -622,7 +665,9 @@ class TestUI(Entity):
 
         # the paper is part of the world: every vision condition reaches it
         severity, central = (0.0, False) if self.accommodations else _vision_severity()
-        alpha = max(.06, 1 - severity * 1.05)
+        # Original visual mode now uses blur rather than making text darker.
+        alpha = (1.0 if STATE.disability == 'visual'
+                 else max(.06, 1 - severity * 1.05))
         if central:                                   # macular: center is gone
             q = _mask_center(q, .45 + severity * .25)
             opt_lines = [_mask_center(o, .4) for o in opt_lines]
@@ -643,6 +688,7 @@ class TestUI(Entity):
             self.fake_opt.text = f'4)  {random.choice(FAKE_OPTIONS)}'
         elif random.random() < .01:
             self.fake_opt.text = ''
+        self._update_paper_blur()
 
     def input(self, key):
         if self.blocked_by is not None:

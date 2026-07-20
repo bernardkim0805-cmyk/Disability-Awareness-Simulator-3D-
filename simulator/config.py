@@ -52,7 +52,7 @@ DISABILITIES = {
         name='Visual impairment',
         icon='[ - ]',
         color=Color(.25, .25, .3, 1),
-        desc='The world dims and hazes over. Use the slider\n(or [ and ] keys in-game) to set the degree of\nblindness, from mild blur to near-total darkness.',
+        desc='The world becomes progressively out of focus.\nUse the slider (or [ and ] keys in-game) to set\nthe blur intensity from clear to heavily blurred.',
     ),
     'deaf': dict(
         name='Deaf / hard of hearing',
@@ -156,7 +156,7 @@ REFLECTIONS = {
     'adhd': 'ADHD is not a lack of willpower. Attention is pulled away\ninvoluntarily, and every interruption costs time others never lose.\nExtra time and quiet rooms are not favours — they level the field.',
     'schizophrenia': 'People living with schizophrenia often perform everyday tasks\nwhile filtering out voices and images that feel completely real.\nWhat looks like distraction from outside is constant hidden work.',
     'wheelchair': 'A single missing ramp or broken elevator can turn a 2-minute route\ninto a 20-minute one, or make it impossible. Accessibility is not\nan extra — for millions of people it is the only way in.',
-    'visual': 'Most blindness is partial, and it varies day to day. Good contrast,\nlarge print, audio announcements and tactile paving are the\ndifference between independence and being stuck.',
+    'visual': 'Visual impairment is diverse; this mode uses blur only as a task analogy.\nLarge print, screen readers, contrast, audio information and tactile cues\ncan make information and navigation independently accessible.',
     'deaf': 'Notice what you missed: it was never shown to you at all.\nDeaf people are not ignoring announcements — the information\nsimply never arrives unless someone makes it visual.',
     'dyslexia': 'Dyslexia does not touch intelligence. The letters really do seem\nto move. Extra reading time and fonts/layouts designed for\ndyslexia let the same mind show what it actually knows.',
 }

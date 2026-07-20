@@ -82,11 +82,11 @@ ORIGINAL_EXPERIENCES = {
     ),
     "visual": _experience(
         "visual",
-        "Uses adjustable darkness and fog; most visual impairments are more varied and specific.",
+        "Uses adjustable defocus blur; most visual impairments are more varied and specific.",
         "Blindness is not always total darkness and visual ability can fluctuate.",
         "Screen readers, magnification, high contrast, tactile cues, and audio description.",
         "NEI: Low Vision and Blindness.",
-        "Set intensity here; the readable panel stays undimmed. [ and ] adjust it in scenarios.",
+        "Set blur intensity here; the readable panel stays clear. [ and ] adjust it in scenarios.",
     ),
     "deaf": _experience(
         "deaf",
