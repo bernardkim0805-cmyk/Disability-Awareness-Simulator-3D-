@@ -1,4 +1,8 @@
 """Shared game state and static data (disabilities, scenarios, reflection text)."""
+if __package__ in (None, ''):    # file was run directly, not imported
+    raise SystemExit('This file is part of the game and cannot be run by itself.\n'
+                     'Run the game from the project folder with:  python main.py')
+
 from ursina import Color
 
 
@@ -79,6 +83,16 @@ SCENARIOS = {
         name='Zombie Escape',
         icon='<NIGHT>',
         desc='Night has fallen and the streets are not safe.\nReach the safehouse before they reach you.',
+    ),
+    'driving': dict(
+        name='City Drive',
+        icon='<DRIVE>',
+        desc="Doctor's appointment across town. Traffic,\nsignals, pedestrians, weather — and a clock.",
+    ),
+    'living_city': dict(
+        name='Living City',
+        icon='<CITY>',
+        desc='An autonomous crowd — every NPC has its own\npersonality, mood, memory and reactions.\nTrigger events and watch them decide.',
     ),
     'kitchen': dict(
         name='Home Kitchen',

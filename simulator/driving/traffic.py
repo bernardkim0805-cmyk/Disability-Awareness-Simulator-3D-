@@ -4,6 +4,10 @@ speeding) to reproduce the unpredictability of real streets. Also: a
 cyclist in the bike lane, a bus that services the stop, an ambulance event,
 and pedestrians (one of whom crosses unexpectedly at the school).
 """
+if __package__ in (None, ''):    # file was run directly, not imported
+    raise SystemExit('This file is part of the game and cannot be run by itself.\n'
+                     'Run the game from the project folder with:  python main.py')
+
 import random
 
 from ursina import Entity, Color, Vec3, time as utime, destroy
@@ -78,6 +82,8 @@ class TrafficCar(Entity):
 
     def update(self):
         dt = utime.dt
+        if self.player is not None and self.player.isEmpty():
+            self.player = None            # the player car was just destroyed
         target = self._target()
         to_t = target - self.position
         to_t.y = 0
@@ -205,3 +211,34 @@ class Bus(TrafficCar):
         if abs(self.z - self.stop_z) < 1.5 and random.random() < .02:
             self.dwell = 5
         super().update()
+
+
+class Truck(TrafficCar):
+    """Large, heavy, slow. Bigger body, longer stopping, wider turns —
+    smaller cars must account for it. Used in the industrial district and on
+    the highway ring."""
+
+    def __init__(self, ring, lights, **kwargs):
+        kwargs.setdefault('speed', 5.0)
+        super().__init__(ring, lights, **kwargs)
+        for c in self.children[:]:
+            destroy(c)
+        cab = Color(.3, .35, .5, 1)
+        Entity(parent=self, model='cube', position=(0, 1.1, 1.4),
+               scale=(2.2, 2.2, 3), color=cab)                 # cab
+        Entity(parent=self, model='cube', position=(0, 1.5, -1.6),
+               scale=(2.4, 3, 6), color=Color(.7, .7, .72, 1))  # trailer/box
+        Entity(parent=self, model='quad', position=(0, 1.5, 2.92),
+               scale=(1.6, .8), color=Color(.15, .2, .25, 1)).setLightOff()
+        self.brakes = []
+        for sx in (-.8, .8):
+            b = Entity(parent=self, model='quad', position=(sx, .7, -4.6),
+                       rotation_y=180, scale=(.4, .25),
+                       color=Color(.35, .05, .05, 1))
+            b.setLightOff()
+            self.brakes.append(b)
+        for sx in (-1.1, 1.1):                                 # extra axles
+            for sz in (-3.2, -1.4, 1.4):
+                Entity(parent=self, model='sphere', position=(sx, .4, sz),
+                       scale=(.3, .7, .7), color=Color(.07, .07, .08, 1))
+        self.base_speed *= .8                                  # heavier = slower

@@ -1,6 +1,11 @@
 """Small interactive space used to demonstrate original experience mechanics."""
 
+
 from __future__ import annotations
+
+if __package__ in (None, ''):    # file was run directly, not imported
+    raise SystemExit('This file is part of the game and cannot be run by itself.\n'
+                     'Run the game from the project folder with:  python main.py')
 
 from ursina import Color, Entity, Text, camera, destroy, invoke, mouse, scene, time, window
 

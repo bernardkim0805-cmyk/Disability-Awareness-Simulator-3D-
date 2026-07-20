@@ -1,4 +1,8 @@
 """Base scenario: world root, player, HUD, NPC interaction, reflection screen."""
+if __package__ in (None, ''):    # file was run directly, not imported
+    raise SystemExit('This file is part of the game and cannot be run by itself.\n'
+                     'Run the game from the project folder with:  python main.py')
+
 from ursina import (Entity, Text, Button, Color, camera, scene, mouse, destroy,
                     distance_xz, Sky, window)
 

@@ -2,6 +2,10 @@
 *remembered offsets* — each frame the previous offset is subtracted before
 the new one is added — so several movement effects stack cleanly on top of
 whatever the player controller did this frame."""
+if __package__ in (None, ''):    # file was run directly, not imported
+    raise SystemExit('This file is part of the game and cannot be run by itself.\n'
+                     'Run the game from the project folder with:  python main.py')
+
 import math
 import random
 

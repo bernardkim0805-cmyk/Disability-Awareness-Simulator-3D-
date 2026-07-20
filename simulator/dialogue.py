@@ -1,4 +1,8 @@
 """Dialogue box, ambient sound-as-text announcements, and dyslexia text scrambling."""
+if __package__ in (None, ''):    # file was run directly, not imported
+    raise SystemExit('This file is part of the game and cannot be run by itself.\n'
+                     'Run the game from the project folder with:  python main.py')
+
 import random
 
 from ursina import Entity, Text, Color, camera, destroy, time

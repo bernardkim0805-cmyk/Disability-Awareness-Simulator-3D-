@@ -1,4 +1,8 @@
 """Scenario: sit a timed school test while classmates finish effortlessly."""
+if __package__ in (None, ''):    # file was run directly, not imported
+    raise SystemExit('This file is part of the game and cannot be run by itself.\n'
+                     'Run the game from the project folder with:  python main.py')
+
 import random
 
 from ursina import Entity, Text, Color, camera, mouse, time, destroy, distance_xz, Vec3
@@ -7,15 +11,83 @@ from .base_scenario import BaseScenario
 from .config import STATE
 from .dialogue import dyslexify
 
-QUESTIONS = [
-    ('What is 12 x 12?', ['124', '144', '154'], 1),
-    ('Which planet is closest to the sun?', ['Mercury', 'Venus', 'Mars'], 0),
-    ('Opposite of "expand"?', ['contract', 'extend', 'inflate'], 0),
-    ('The teacher announced the answer to this one out loud.', ['A', 'B', 'C'], 1),
-    ('7 + 6 x 2 = ?', ['26', '19', '20'], 1),
-]
+TEST_TIME = 300              # 30 questions, five minutes
+
+
+def _make_questions():
+    """30 questions: a handwritten core + seeded arithmetic (stable between
+    runs so retries are comparable)."""
+    qs = [
+        ('What is 12 x 12?', ['124', '144', '154'], 1),
+        ('Which planet is closest to the sun?', ['Mercury', 'Venus', 'Mars'], 0),
+        ('Opposite of "expand"?', ['contract', 'extend', 'inflate'], 0),
+        ('The teacher announced the answer to this one out loud.', ['A', 'B', 'C'], 1),
+        ('7 + 6 x 2 = ?', ['26', '19', '20'], 1),
+        ('Which word is spelled correctly?', ['recieve', 'receive', 'receeve'], 1),
+        ('A synonym of "rapid"?', ['sluggish', 'swift', 'steady'], 1),
+        ('Water boils at ___ degrees C at sea level.', ['90', '100', '110'], 1),
+        ('Which is a mammal?', ['salmon', 'dolphin', 'iguana'], 1),
+        ('The plural of "crisis"?', ['crises', 'crisises', 'crisi'], 0),
+        ('Which fraction is largest?', ['1/3', '2/5', '1/2'], 2),
+        ('"Their", "there" or "they\'re": ___ going home.', ['their', 'there', "they're"], 2),
+    ]
+    rng = random.Random(7)
+    ops = [('+', lambda a, b: a + b), ('-', lambda a, b: a - b),
+           ('x', lambda a, b: a * b)]
+    while len(qs) < 30:
+        sym, fn = rng.choice(ops)
+        a = rng.randint(7, 24 if sym == 'x' else 68)
+        b = rng.randint(3, 9 if sym == 'x' else 47)
+        right = fn(a, b)
+        opts = {right}
+        while len(opts) < 3:
+            opts.add(right + rng.choice((-10, -3, -2, -1, 1, 2, 3, 4, 10)))
+        opts = list(opts)
+        rng.shuffle(opts)
+        qs.append((f'{a} {sym} {b} = ?', [str(o) for o in opts],
+                   opts.index(right)))
+    return qs
+
+
+QUESTIONS = _make_questions()
 
 FAKE_OPTIONS = ["they're laughing at you", 'you already failed', "don't answer. leave."]
+
+FAKE_TEACHER_HINTS = [                    # schizophrenia: sounds exactly real
+    'Ms. Rivera: "for question {n}... the answer is {w}."',
+    'Ms. Rivera leans over: "you marked {n} wrong. It should be {w}."',
+    'Ms. Rivera: "skip question {n}, it does not count. Put {w}."',
+]
+
+
+def _vision_severity():
+    """How degraded the TEST PAPER itself is (0..1) — the paper is part of
+    the world, so every visual condition must reach it too."""
+    s = 0.0
+    central = False
+    if STATE.disability == 'visual':
+        s = STATE.blindness
+    fx = STATE.active_fx
+    if 'macular' in fx:
+        s, central = max(s, .85), True    # central vision IS reading vision
+    if 'cataracts' in fx:
+        s = max(s, .55)
+    if 'rp' in fx:
+        s = max(s, .5)
+    if 'glaucoma' in fx:
+        s = max(s, .3)
+    if 'visual_snow' in fx:
+        s = max(s, .45)
+    return s, central
+
+
+def _mask_center(line, frac=.5):
+    """Macular degeneration: the middle of wherever you look is gone."""
+    n = len(line)
+    if n < 6:
+        return '~' * n
+    keep = int(n * (1 - frac) / 2)
+    return line[:keep] + '~' * (n - 2 * keep) + line[-keep:]
 
 
 class SchoolTestScenario(BaseScenario):
@@ -81,7 +153,7 @@ class SchoolTestScenario(BaseScenario):
                position=(-3, 3, 12.35), scale=(7, 3))
         Entity(parent=self, model='cube', color=Color(.5, .38, .25, 1),  # chalk tray
                position=(-3, 1.25, 12.3), scale=(7, .12, .25))
-        chalk_text = Text(parent=self, text='FRIDAY: TEST DAY\n5 questions - 75 seconds\ngood luck!',
+        chalk_text = Text(parent=self, text='FRIDAY: TEST DAY\n30 questions - 5 minutes\ngood luck!',
                           position=(-3, 3.8, 12.34), scale=7, origin=(0, 0),
                           color=Color(.92, .95, .9, .9))
         chalk_text.setLightOff()
@@ -196,7 +268,7 @@ class SchoolTestScenario(BaseScenario):
             name='Ms. Rivera', position=(2.5, 0, 10),
             shirt=Color(.5, .35, .6, 1), expression='happy',
             lines=["Take your seat — the test is about to start.",
-                   "You'll have 75 seconds for 5 questions.",
+                   "Thirty questions, five minutes. Pace yourselves.",
                    "Listen carefully. I sometimes give hints out loud."])
 
         student_names = ['Maya', 'Jonah', 'Priya', 'Leo']
@@ -355,13 +427,14 @@ class SchoolTestScenario(BaseScenario):
 
         self.t = 0
         self.test = None
-        self.handins = [(20, 0), (35, 1), (50, 2)]  # (time, student index)
+        self.handins = [(70, 0), (130, 1), (190, 2)]  # (time, student index)
         self.set_objective('Find the GREEN desk and press E to start the test')
 
     def tick(self):
         self.t += time.dt
         if self.test:
             self.tick_mockery(self.t - self.test_start)
+            self._tick_forced_effects(time.dt)
 
         near_desk = distance_xz(self.player.position, self.player_desk.position) < 2.2
         if near_desk and not self.test and not self.dialogue.enabled:
@@ -372,7 +445,7 @@ class SchoolTestScenario(BaseScenario):
             if not self.test:  # tick may have ended the test
                 return
             # verbal hint for question 4 — deaf players never receive it
-            if not getattr(self, 'hint_given', False) and self.test.timer < 55:
+            if not getattr(self, 'hint_given', False) and self.test.timer < TEST_TIME - 20:
                 self.hint_given = True
                 self.announcer.sound('Ms. Rivera: "for the announced question, the answer is B."', 6)
             for when, idx in self.handins[:]:
@@ -403,6 +476,82 @@ class SchoolTestScenario(BaseScenario):
         self.test_start = self.t
         self.set_objective('Answer with keys 1 / 2 / 3 — V toggles accommodations')
         self.test = TestUI(on_finish=self.end_test)
+        # forced-effect timers (schizophrenia / ADHD hit you, not warn you)
+        self.minitask = None
+        self.hijack_timer = random.uniform(14, 24)
+        self.shadow_timer = random.uniform(12, 22)
+        self.fake_hint_timer = random.uniform(25, 40)
+        self.cover = None
+        self.desk_shadow = None
+
+    # ---------------- forced neurological effects during the test -----------
+    def _tick_forced_effects(self, dt):
+        adhd = STATE.disability == 'adhd' or 'adhd_fx' in STATE.active_fx
+        schizo = STATE.disability == 'schizophrenia'
+
+        if adhd and self.minitask is None:
+            self.hijack_timer -= dt
+            if self.hijack_timer <= 0:
+                self.minitask = MiniTask(on_done=self._minitask_done)
+                self.test.blocked_by = self.minitask
+                self.effects.distraction_timer = 30   # silence the soft version
+                camera.shake(duration=.3, magnitude=1.2)
+
+        if not schizo:
+            return
+        # a shadow slides over the paper and just... stays there
+        self.shadow_timer -= dt
+        if self.cover is None and self.shadow_timer <= 0:
+            self.cover = Entity(parent=camera.ui, model='quad',
+                                color=Color(.02, .01, .03, .97),
+                                position=(.9, .05), scale=(1.05, .75), z=-.1)
+            self.cover.animate_x(0, duration=.7)
+            self.test.blocked_by = self.cover
+            from ursina import invoke
+            def lift():
+                if self.cover:
+                    self.cover.animate_x(-1, duration=.5)
+                    destroy(self.cover, delay=.6)
+                    self.cover = None
+                    if self.test and self.test.blocked_by is not self.minitask:
+                        self.test.blocked_by = self.minitask
+            invoke(lift, delay=random.uniform(2.5, 4.5))
+            self.shadow_timer = random.uniform(18, 30)
+            # sometimes a figure is suddenly standing at your desk
+            if self.desk_shadow is None and random.random() < .7:
+                self.desk_shadow = Entity(parent=self, model='cube',
+                                          color=Color(.02, .02, .04, .95),
+                                          position=(-2, 1, -1.6), scale=(.6, 2, .4))
+                Entity(parent=self.desk_shadow, model='sphere', y=.6,
+                       scale=(.5, .3, .5), color=Color(.02, .02, .04, .95))
+                def vanish():
+                    if self.desk_shadow:
+                        destroy(self.desk_shadow)
+                        self.desk_shadow = None
+                invoke(vanish, delay=random.uniform(3, 6))
+        # the 'teacher' gives you answers. She isn't. They're wrong.
+        self.fake_hint_timer -= dt
+        if self.fake_hint_timer <= 0 and self.test:
+            self.fake_hint_timer = random.uniform(28, 45)
+            n = min(len(QUESTIONS), self.test.q_index + random.randint(1, 3))
+            _, options, correct = QUESTIONS[n - 1]
+            wrong = random.choice([i for i in range(3) if i != correct]) + 1
+            self.announcer.sound(random.choice(FAKE_TEACHER_HINTS)
+                                 .format(n=n, w=wrong), 6)
+
+    def _minitask_done(self):
+        self.minitask = None
+        if self.test:
+            self.test.blocked_by = self.cover     # shadow may still be there
+        self.hijack_timer = random.uniform(20, 38)
+
+    def cleanup(self):
+        for attr in ('test', 'minitask', 'cover', 'desk_shadow'):
+            e = getattr(self, attr, None)
+            if e:
+                destroy(e)
+                setattr(self, attr, None)
+        super().cleanup()
 
     def end_test(self, score, total):
         passed = score >= 3
@@ -416,16 +565,18 @@ class SchoolTestScenario(BaseScenario):
 
 
 class TestUI(Entity):
-    """The exam panel: 5 questions, keys 1/2/3, 75 second timer."""
+    """The exam panel: 30 questions, keys 1/2/3, five-minute timer."""
 
     def __init__(self, on_finish, **kwargs):
         super().__init__(parent=camera.ui, **kwargs)
         self.on_finish = on_finish
         self.q_index = 0
         self.score = 0
-        self.timer = 75
+        self.timer = TEST_TIME
         self.accommodations = False
         self.rescramble = 0
+        self.blocked_by = None            # a MiniTask or shadow covering the paper
+        self.jitter_t = 0
 
         Entity(parent=self, model='quad', color=Color(.05, .08, .1, .92),
                scale=(1, .7), y=.05, z=1)
@@ -453,8 +604,10 @@ class TestUI(Entity):
         q, options, _ = QUESTIONS[self.q_index]
         opt_lines = [f'{i + 1})  {o}' for i, o in enumerate(options)]
 
-        if STATE.disability == 'adhd' and not effects.focused:
-            self.q_text.text = '. . . your mind is somewhere else . . .'
+        if self.blocked_by is not None or (STATE.disability == 'adhd'
+                                           and not effects.focused):
+            self.q_text.text = ('. . . your mind is somewhere else . . .'
+                                if self.blocked_by is None else '')
             for t in self.opts:
                 t.text = ''
             return
@@ -467,10 +620,17 @@ class TestUI(Entity):
                 self._o_cache = [dyslexify(o) for o in opt_lines]
             q, opt_lines = self._q_cache, self._o_cache
 
-        alpha = 1.0
-        if STATE.disability == 'visual' and not self.accommodations:
-            alpha = max(.06, 1 - STATE.blindness * 1.05)
-
+        # the paper is part of the world: every vision condition reaches it
+        severity, central = (0.0, False) if self.accommodations else _vision_severity()
+        alpha = max(.06, 1 - severity * 1.05)
+        if central:                                   # macular: center is gone
+            q = _mask_center(q, .45 + severity * .25)
+            opt_lines = [_mask_center(o, .4) for o in opt_lines]
+        if 'visual_snow' in STATE.active_fx and not self.accommodations:
+            q = ''.join(c if random.random() > .08 else '#' for c in q)
+        if 'oscillopsia' in STATE.active_fx and not self.accommodations:
+            self.jitter_t += dt * 20
+            self.q_text.x = 0.012 * random.uniform(-1, 1)
         scale = 1.6 if self.accommodations else 1.3
         self.q_text.text = q
         self.q_text.scale = scale
@@ -485,6 +645,8 @@ class TestUI(Entity):
             self.fake_opt.text = ''
 
     def input(self, key):
+        if self.blocked_by is not None:
+            return                        # attention or vision is captured
         if key == 'v':
             self.accommodations = not self.accommodations
             self.feedback.text = ('accommodations ON: large print, plain layout, screen reader'
@@ -504,3 +666,67 @@ class TestUI(Entity):
             self.fake_opt.text = ''
             if self.q_index >= len(QUESTIONS):
                 self.on_finish(self.score, len(QUESTIONS))
+
+
+class MiniTask(Entity):
+    """ADHD attention hijack: the test is GONE until you finish this.
+    The exam clock keeps running the whole time — interruptions have a cost
+    the accommodation of extra time exists to repay."""
+
+    PROMPTS = [
+        ('mash', 'your pen rolled off the desk — SPACE x{n} to fish it out'),
+        ('seq', 'the hallway noise wins. type {seq} to snap back'),
+        ('mash', 'you are suddenly re-reading the poster. SPACE x{n} to look away'),
+        ('seq', 'that song is back in your head. type {seq} to shake it'),
+    ]
+
+    def __init__(self, on_done, **kwargs):
+        super().__init__(parent=camera.ui, **kwargs)
+        self.on_done = on_done
+        kind, prompt = random.choice(self.PROMPTS)
+        self.kind = kind
+        self.need = random.randint(5, 8)
+        self.seq = [random.choice('adfjkl') for _ in range(3)]
+        self.seq_i = 0
+        text = prompt.format(n=self.need, seq=' '.join(self.seq).upper())
+
+        Entity(parent=self, model='quad', color=Color(.16, .08, 0, .96),
+               scale=(1.05, .75), y=.05, z=-.2)
+        Text(parent=self, text='YOUR ATTENTION HAS LEFT THE TEST', origin=(0, 0),
+             y=.22, scale=1.3, color=Color(1, .7, .3, 1))
+        self.prompt = Text(parent=self, text=text, origin=(0, 0), y=.08,
+                           scale=1.1, color=Color(1, 1, 1, 1))
+        self.progress = Text(parent=self, text='', origin=(0, 0), y=-.05,
+                             scale=1.4, color=Color(1, .85, .5, 1))
+        Text(parent=self, text='(the exam clock is still running)', origin=(0, 0),
+             y=-.18, scale=.8, color=Color(.8, .7, .6, 1))
+        self._render()
+
+    def _render(self):
+        if self.kind == 'mash':
+            self.progress.text = '. ' * self.need
+        else:
+            done = self.seq_i
+            self.progress.text = ' '.join(
+                c.upper() if i >= done else '*' for i, c in enumerate(self.seq))
+
+    def input(self, key):
+        if self.kind == 'mash' and key == 'space':
+            self.need -= 1
+            self._render()
+            if self.need <= 0:
+                self._finish()
+        elif self.kind == 'seq' and len(key) == 1 and key.isalpha():
+            if key == self.seq[self.seq_i]:
+                self.seq_i += 1
+                self._render()
+                if self.seq_i >= len(self.seq):
+                    self._finish()
+            else:
+                self.seq_i = 0
+                self._render()
+
+    def _finish(self):
+        cb = self.on_done
+        destroy(self)
+        cb()

@@ -61,6 +61,39 @@ window.fps_counter.enabled = False
 window.exit_button.visible = False
 window.cog_button.visible = False
 
+# ---------------------------------------------------------------------------
+# Crash resilience. Ursina's frame loop runs every entity's update() and every
+# scheduled invoke()/animate() callback with NO exception handling, so a single
+# throw — most often a delayed callback firing after its scenario was destroyed
+# — kills the whole process ("random shutdown"). A shipping game contains that:
+# these two guards log the error and skip the offending call for one frame
+# instead of tearing down the app.
+# ---------------------------------------------------------------------------
+import traceback as _tb
+from ursina.sequence import Func as _Func
+
+_orig_func_call = _Func.__call__
+def _safe_func_call(self):
+    try:
+        return _orig_func_call(self)
+    except Exception:
+        _tb.print_exc()          # a stray invoke/animate callback — contained
+        return None
+_Func.__call__ = _safe_func_call
+
+from direct.task.Task import Task as _Task
+
+_orig_update = app._update
+def _safe_update(task=None):
+    try:
+        return _orig_update(task)
+    except Exception:
+        _tb.print_exc()          # a bad entity.update() — skip this frame, keep running
+        return _Task.cont
+# replace ursina's already-registered 'update' task with the guarded one
+app.taskMgr.remove('update')
+app._update_task = app.taskMgr.add(_safe_update, 'update')
+
 
 if size := requested_window_size(sys.argv[1:]):
     window.size = size

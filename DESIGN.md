@@ -156,6 +156,133 @@ and one import in `menu._scenario_class`.
   looked toward, ADHD gets loud phone notifications + blocking interrupt
   tasks (P / door).
 
+## City Drive scenario — `simulator/driving/` (self-contained package)
+
+Registration-only shared edits (SCENARIOS entry + one menu import), same
+partner-safe pattern as the kitchen.
+
+- `city.py`: 3x3 signalized grid (working `IntersectionLights` state
+  machines cars/player both obey), stop signs, speed/school/construction
+  signage, street names, crosswalks, lane arrows, bike lane, tunnel,
+  bus stop, potholes/debris/parked-car blockers, clinic + parking bay.
+- `traffic.py`: lane-following ring AI with light compliance, spacing and
+  brake lights; ~15% risky drivers (sudden stops, swerves, speeding);
+  cyclist in the bike lane; a bus that dwells at its stop; an `Ambulance`
+  whose siren volume tracks distance (paired with the HUD direction banner
+  — the deaf-accessible channel).
+- `car.py`: first-person cockpit (rotating wheel, dash, GPS console, A
+  pillars, hood) + modern-vehicle GUI: nav bar w/ ETA, big speed + limit
+  roundel, fuel/engine/signals, and **mirrors as proximity displays** with
+  blind-spot flash (no render-to-texture on this GPU — re-encoding the
+  information IS the accessibility lesson). GUI adapts: low-vision -> 1.45x
+  text + high contrast; deaf -> bigger/longer flashing warnings + camera
+  'vibration' pulse. Motor conditions add steering wobble + input latency.
+- `phone.py`: TAB smartphone (map, route list, voice-nav toggle); ADHD gets
+  loud competing notifications (P to dismiss); time-open and
+  distracted-driving seconds are metered.
+- `scenario.py`: doctor's-appointment objective with 6-leg GPS route,
+  'recalculating' wrong-turn detection, voice navigation via `say_nav`
+  (assistive feature, works for everyone, silent in deaf mode), weather
+  (day/night/rain with windshield drops + animated wiper), scripted school
+  pedestrian + ambulance events, law tracking (red lights, speed zones
+  20/40/60), collisions/potholes, and an end **analysis panel** (time,
+  crashes, close calls, violations, wrong turns, distraction seconds,
+  assist usage) framing the accessibility thesis.
+
+## Driving law enforcement — `simulator/driving/laws.py` + `police.py`
+
+- `laws.py`: `DrivingEvaluator` continuously scores behaviour — speeding
+  (two tiers), red lights, rolled stop signs, pedestrian/EV yielding,
+  oncoming-lane, tailgating, turn-signal use, unsafe lane changes,
+  collisions, near misses, potholes. Real-time SAFETY score + hidden "heat".
+  Every threshold/penalty/weight is in `LAW_CONFIG` — tune without touching
+  detectors. **Fairness is structural**: the evaluator's inputs are only
+  positions/speeds/signals; no disability flag reaches it, so an identical
+  drive scores identically for everyone.
+- `police.py`: `PoliceManager` dispatches a `PoliceCar` purely on accumulated
+  heat, closes in with lights/siren (siren volume ~ distance; deaf players
+  get the HUD PULL-OVER banner + vibration), and requires a sustained stop.
+  Keep driving -> grace window -> pursuit + backup unit -> license suspended.
+  On stopping, an officer NPC walks to the window and the DialogueBox quotes
+  `evaluator.recent_violations()` verbatim. Severity ladder from score/repeat:
+  warning -> citation (fine + record) -> suspension. Officer script ALWAYS
+  states the stop is about observed driving that would stop any driver, never
+  the disability. `edu_summary()` maps active conditions -> assistive-tech
+  recommendations (adaptive controls, voice nav, blind-spot monitoring, etc.)
+  shown on every major consequence and the end screen. Major collision =
+  tow + $450 + vehicle lost.
+
+## Driving open world — `simulator/driving/worldgen.py` + `config.py`
+
+`build_open_world()` grows the downtown grid into an interconnected map (no
+loading screens): an outer **highway ring** with on/off ramps, guardrails,
+reflectors and overhead gantry signs; a **lit tunnel** to the south; a
+**suspension bridge** over a river (towers, cables, guard barriers, water +
+boat below) to the north; and **suburbs / industrial / countryside**
+districts, each with its own identity, plus gas stations and spur-road
+connectors. `config.py` holds every tunable (region speeds/densities/tints,
+traffic + truck fractions, weather probabilities, police, tunnel/bridge
+params). Modular facades match the brief: `WorldGeneration`,
+`RoadNetworkSystem` (region_at / speed_limit / in_tunnel / on_bridge);
+TrafficAI/Police/Emergency already exist in traffic.py/police.py. Driving
+effects: tunnel darkens the view + echoes the engine and warns of weak GPS;
+the bridge applies a crosswind nudge; region banners announce district
+changes; region-aware speed limits (downtown 40, highway 90, etc.); heavy
+`Truck` traffic on the ring/industrial with slower accel + wider mass.
+Scale is bounded (fixed-function primitive renderer) — AAA-structured, not a
+literal square-mile map.
+
+## Driving world managers + damage — `driving/managers.py`, `damage.py`
+
+Modular manager layer over the existing systems (the brief's architecture):
+`WorldManager` owns `TrafficManager`, `PedestrianManager`, `PoliceManager
+Facade`, `WeatherManager`, `CollisionManager`, `EventManager`,
+`MaterialSystem`, `RenderingManager` — all config-driven from `config.py`
+(QUALITY/DENSITY/DAMAGE blocks). `CollisionManager` routes every crash
+through `VehicleDamageSystem` (damage.py): progressive, driver-visible
+damage — windshield-crack overlays, hood smoke, steering-alignment pull,
+top-speed loss, tow when totaled — plus notifying nearby drivers (brake) and
+pedestrians (startle). `RenderingManager.report()` is deliberately HONEST:
+it enumerates what the fixed-function stack CANNOT do (PBR, deferred, HDR,
+SSAO, SSR, volumetrics, TAA, reflection probes, GI, ragdoll/Euphoria,
+rigidbody destruction) rather than faking a AAA pipeline. Those need
+programmable shaders this Mac can't compile — not implementable here.
+
+## Autonomous NPC agents — `simulator/agents/` (self-contained tab)
+
+Component-based, event-reactive crowd (Living City scenario). Fidelity is
+BEHAVIOURAL, not rendered — no true IK/cloth/muscle sim on the fixed-function
+primitive rig; those are approximated.
+
+- `events.py`: `EventBus` — radius-filtered pub/sub. World events (crash,
+  gunshot, police, greet) reach only agents within `intensity * range`;
+  each decides its own reaction.
+- `profile.py`: `roll_profile()` — procedural identity (age, personality,
+  routine, build) that derives all the tunable knobs the brief named
+  (walking_speed_variation, gesture_probability, eye_contact_frequency,
+  conversation_chance, emotional_reaction_strength, awareness_radius,
+  curiosity_level, social_distance) from personality so variation stays
+  believable. Effectively unbounded combinations.
+- `systems.py`: the component stack — `PerceptionSystem` (rate-limited
+  scan + gaze focus), `EmotionSystem` (valence/arousal model -> emotion
+  label), `MemorySystem` (recognizes repeat player encounters, sentiment),
+  `MovementController` (weight/momentum: rotate-then-move, eased accel,
+  terrain-follow), `AnimationController` (feeds the rig's live procedural
+  gait — no canned clips — plus emotional posture), `FacialExpression
+  Controller` (emotion face + eye-contact/aversion saccades + blink),
+  `GestureController` (personality-scaled wave/shrug/point/check-watch/…),
+  `PhysicsInteractionSystem` (startle/stumble/recoil with recovery easing).
+- `dialogue_engine.py`: ambient two-agent conversations, topic by
+  location/personality; a nearby event hijacks the topic.
+- `agent.py`: `Agent(Human)` + `NPCController` behaviour state machine
+  (routine/wander/observe/socialize/react/flee) whose transitions are
+  weighted by personality/emotion/memory/perception — emergent, not
+  scripted.
+- `crowd.py`: `AgentManager` spawns the crowd with near/far LOD and owns
+  the bus; `fire_event()` broadcasts. `demo.py`: Living City sandbox
+  (C crash / P police / G shout / E greet). Verified: 26 agents, all
+  different gaits, split 18-flee / 8-gawk on a crash by personality.
+
 ## Adding a new disability module
 
 1. `config.py`: add an entry to `DISABILITIES` (name, icon, color, desc) and

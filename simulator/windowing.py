@@ -1,4 +1,8 @@
 """Display-size parsing kept separate so it can be tested without opening Ursina."""
+if __package__ in (None, ''):    # file was run directly, not imported
+    raise SystemExit('This file is part of the game and cannot be run by itself.\n'
+                     'Run the game from the project folder with:  python main.py')
+
 
 
 def requested_window_size(args: list[str]) -> tuple[int, int] | None:

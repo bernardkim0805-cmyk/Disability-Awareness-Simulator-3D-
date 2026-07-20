@@ -1,4 +1,8 @@
 """Player construction: standard first-person walker, or wheelchair variant."""
+if __package__ in (None, ''):    # file was run directly, not imported
+    raise SystemExit('This file is part of the game and cannot be run by itself.\n'
+                     'Run the game from the project folder with:  python main.py')
+
 from ursina import Entity, Color, held_keys
 from ursina.prefabs.first_person_controller import FirstPersonController
 

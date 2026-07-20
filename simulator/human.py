@@ -3,6 +3,10 @@ kinesiologically plausible gait: legs swing from the hip with knee flexion
 during the swing phase, arms counter-swing from the shoulder with elbow bend,
 the pelvis rocks and the torso bobs twice per stride and leans into movement.
 """
+if __package__ in (None, ''):    # file was run directly, not imported
+    raise SystemExit('This file is part of the game and cannot be run by itself.\n'
+                     'Run the game from the project folder with:  python main.py')
+
 import math
 import random
 

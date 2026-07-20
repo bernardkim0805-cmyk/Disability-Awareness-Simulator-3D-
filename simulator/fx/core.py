@@ -17,6 +17,10 @@ conflict: visual effects don't write to the GPU directly — they *contribute*
 to a shared parameter dict that PostFX merges once per frame (max/sum rules),
 so any combination of effects is safe.
 """
+if __package__ in (None, ''):    # file was run directly, not imported
+    raise SystemExit('This file is part of the game and cannot be run by itself.\n'
+                     'Run the game from the project folder with:  python main.py')
+
 from ursina import Entity, camera, time as utime
 
 from ..config import STATE

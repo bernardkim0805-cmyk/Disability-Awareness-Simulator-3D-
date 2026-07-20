@@ -5,6 +5,10 @@ public helpers to write `kitchen_*.wav` files into the shared asset folder,
 then play them through the AudioManager so deaf mode / hearing-loss hooks
 still apply automatically.
 """
+if __package__ in (None, ''):    # file was run directly, not imported
+    raise SystemExit('This file is part of the game and cannot be run by itself.\n'
+                     'Run the game from the project folder with:  python main.py')
+
 import math
 import random
 

@@ -9,6 +9,10 @@ conveyed the accessible way — approach = volume ramp (handled by the
 traffic code, distance -> volume) paired with the HUD's directional
 indicator, which doubles as the deaf-accessible alternative.
 """
+if __package__ in (None, ''):    # file was run directly, not imported
+    raise SystemExit('This file is part of the game and cannot be run by itself.\n'
+                     'Run the game from the project folder with:  python main.py')
+
 import hashlib
 import subprocess
 import sys
