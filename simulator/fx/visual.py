@@ -6,6 +6,10 @@ Physiologically-based Model for Simulation of Color Vision Deficiency",
 IEEE TVCG — severity-1.0 dichromacy matrices, interpolated toward identity
 by the intensity slider (their recommended anomalous-trichromacy approach).
 """
+if __package__ in (None, ''):    # file was run directly, not imported
+    raise SystemExit('This file is part of the game and cannot be run by itself.\n'
+                     'Run the game from the project folder with:  python main.py')
+
 import math
 import random
 

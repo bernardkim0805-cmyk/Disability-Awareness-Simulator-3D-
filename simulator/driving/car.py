@@ -7,6 +7,10 @@ Mirrors: without render-to-texture on this GPU, mirrors are implemented as
 would reflect, and the side mirrors double as blind-spot warnings. That is
 itself the accessibility lesson: information can be re-encoded.
 """
+if __package__ in (None, ''):    # file was run directly, not imported
+    raise SystemExit('This file is part of the game and cannot be run by itself.\n'
+                     'Run the game from the project folder with:  python main.py')
+
 import math
 import random
 
@@ -121,25 +125,29 @@ class PlayerCar(Entity):
              color=Color(.7, .7, .7, 1))
         self.engine_light = Text(parent=self.gui, text='ENGINE', position=(.2, -.44),
                                  scale=.6 * big, color=Color(.3, .3, .3, 1))
+        # note: start_tag/end_tag overridden so '<' and '>' render literally
+        # (ursina Text parses <...> as markup and crashes on a lone '<')
         self.sig_l = Text(parent=self.gui, text='<', origin=(0, 0),
+                          start_tag='\x01', end_tag='\x02',
                           position=(-.14, -.41), scale=1.6, color=Color(.25, .3, .25, 1))
         self.sig_r = Text(parent=self.gui, text='>', origin=(0, 0),
+                          start_tag='\x01', end_tag='\x02',
                           position=(.2, -.41), scale=1.6, color=Color(.25, .3, .25, 1))
 
-        # top: navigation bar (scenario writes into it)
-        Entity(parent=self.gui, model='quad', position=(0, .44), scale=(.85, .1),
+        # top: navigation bar (below the scenario objective banner)
+        Entity(parent=self.gui, model='quad', position=(0, .365), scale=(.85, .09),
                color=panel)
         self.nav_text = Text(parent=self.gui, text='', origin=(0, 0),
-                             position=(0, .45), scale=1.05 * big,
+                             position=(0, .38), scale=1.05 * big,
                              color=Color(.6, 1, .7, 1) if hc else Color(.8, .95, .85, 1))
         self.eta_text = Text(parent=self.gui, text='', origin=(0, 0),
-                             position=(0, .41), scale=.75 * big,
+                             position=(0, .345), scale=.75 * big,
                              color=Color(.8, .8, .8, 1))
 
         # mirrors as proximity displays
-        self.rear_bg = Entity(parent=self.gui, model='quad', position=(0, .33),
+        self.rear_bg = Entity(parent=self.gui, model='quad', position=(0, .28),
                               scale=(.34, .05), color=Color(.05, .08, .08, .9))
-        Text(parent=self.gui, text='rear', position=(-.16, .355), scale=.55,
+        Text(parent=self.gui, text='rear', position=(-.16, .305), scale=.55,
              color=Color(.6, .6, .6, 1))
         self.side_l = Entity(parent=self.gui, model='quad', position=(-.52, -.3),
                              scale=(.09, .06), color=Color(.05, .08, .08, .9))
@@ -252,7 +260,7 @@ class PlayerCar(Entity):
             if -26 < behind < -2 and abs(side) < 7:            # rear mirror
                 b = self.blips[i]; i += 1
                 b.enabled = True
-                b.position = (max(-.15, min(.15, side * .02)), .33)
+                b.position = (max(-.15, min(.15, side * .02)), .28)
                 b.color = Color(1, .8, .3, 1)
             elif -5 < behind < 2 and 1.6 < abs(side) < 5:      # blind spot!
                 b = self.blips[i]; i += 1
@@ -261,6 +269,11 @@ class PlayerCar(Entity):
                 b.color = Color(1, .2, .15, 1) if int(self.t * 6) % 2 else Color(.6, .1, .1, 1)
                 blind = True
         return blind
+
+    def on_destroy(self):
+        # the GUI lives on camera.ui, not under the car — clean it ourselves
+        from ursina import destroy
+        destroy(self.gui)
 
     def input(self, key):
         if key == 'q':

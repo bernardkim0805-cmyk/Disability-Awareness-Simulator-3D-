@@ -12,6 +12,10 @@ mechanics of impaired reading:
 Severity scales with the dyslexia experience / lab reading conditions;
 a mild version applies to everyone so all players feel the difference.
 """
+if __package__ in (None, ''):    # file was run directly, not imported
+    raise SystemExit('This file is part of the game and cannot be run by itself.\n'
+                     'Run the game from the project folder with:  python main.py')
+
 import random
 
 from ursina import Entity, Text, Button, Color, camera, destroy, time as utime

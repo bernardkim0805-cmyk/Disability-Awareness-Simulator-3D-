@@ -1,4 +1,8 @@
 """Per-disability sensory and attention effects applied on top of any scenario."""
+if __package__ in (None, ''):    # file was run directly, not imported
+    raise SystemExit('This file is part of the game and cannot be run by itself.\n'
+                     'Run the game from the project folder with:  python main.py')
+
 import random
 
 from ursina import (Entity, Text, Color, camera, scene, destroy, time, Vec3)

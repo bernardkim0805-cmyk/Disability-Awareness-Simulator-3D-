@@ -7,6 +7,10 @@ feature usage are all tracked and reported in the end analysis — the point
 is how environment + assistive design change the difficulty of an ordinary
 task, not whether the player is flawless.
 """
+if __package__ in (None, ''):    # file was run directly, not imported
+    raise SystemExit('This file is part of the game and cannot be run by itself.\n'
+                     'Run the game from the project folder with:  python main.py')
+
 import math
 import random
 
@@ -17,9 +21,13 @@ from ..config import STATE
 from .. import world
 from .city import build_city, B, ROAD_W
 from .car import PlayerCar, KMH
-from .traffic import TrafficCar, Ambulance, Cyclist, Bus
+from .traffic import TrafficCar, Ambulance, Cyclist, Bus, Truck
 from .phone import Phone, NotificationEngine
 from .sounds import ensure_drive_assets, say_nav
+from .worldgen import WorldGeneration, RoadNetworkSystem
+from .managers import WorldManager
+from .laws import DrivingEvaluator
+from .police import PoliceManager, edu_summary
 
 APPOINTMENT = 300            # seconds until the appointment begins
 
@@ -49,7 +57,9 @@ class DrivingScenario(BaseScenario):
         else:
             self.lights = world.day_lights()
 
-        self.places = build_city(self, night=night)
+        self.world_gen = WorldGeneration(self, night=night, rng=random)
+        self.places = self.world_gen.places
+        self.roads = RoadNetworkSystem(self.places)
         self.car = PlayerCar(night=night, parent=self,
                              position=self.places['home'], rotation_y=0)
 
@@ -81,6 +91,15 @@ class DrivingScenario(BaseScenario):
                                speed=random.uniform(5.5, 8),
                                risky=random.random() < .15)
                 self.vehicles.append(c)
+        # highway ring traffic: faster cars + heavy trucks on a big loop
+        H = self.places.get('highway_half', 200)
+        HRING = [(-H, -H), (H, -H), (H, H), (-H, H)]
+        for _ in range(4):
+            self.vehicles.append(TrafficCar(HRING, self.places['lights'],
+                                            parent=self, speed=random.uniform(12, 15)))
+        for _ in range(2):
+            self.vehicles.append(Truck(HRING, self.places['lights'], parent=self))
+            self.vehicles.append(Truck(RING_BIG, self.places['lights'], parent=self))
         self.bus = Bus(RING_NW, self.places['lights'], stop_z=20, parent=self)
         self.vehicles.append(self.bus)
         self.cyclist = Cyclist(parent=self)
@@ -131,6 +150,10 @@ class DrivingScenario(BaseScenario):
         self.engine = get_audio().play('drive_engine', volume=.3, loop=True)
         get_audio().play('drive_traffic', volume=.2, loop=True)
 
+        self.evaluator = DrivingEvaluator(self)
+        self.police = PoliceManager(self, self.evaluator, parent=self)
+        WorldManager(self)      # world.managers.{traffic,pedestrian,collision,...}
+
         self.set_objective("Doctor's appointment across the city — you're "
                            'running late. Drive safely and park in the green bay')
         self._announce_leg()
@@ -165,6 +188,9 @@ class DrivingScenario(BaseScenario):
 
         self._tick_route(dt)
         self._tick_laws(dt)
+        self.evaluator.tick(dt)
+        self.managers.update(dt)
+        self._tick_infrastructure(dt)
         self._tick_hazards(dt)
         self._tick_events(dt)
         if self.weather == 'rain':
@@ -180,6 +206,41 @@ class DrivingScenario(BaseScenario):
         if self.time_left <= 0:
             self._end(False, 'The appointment started without you.')
 
+    def _tick_infrastructure(self, dt):
+        """Tunnel: darken the view + echo the engine/siren. Bridge: crosswind
+        nudges the car. Region name shows on the HUD."""
+        from ursina import camera as _cam, Color as _C
+        p = self.car.position
+        dark = self.roads.in_tunnel(p)
+        if dark > 0:
+            _cam.overlay.color = _C(0, 0, 0, min(.7, dark))
+            if not getattr(self, '_in_tunnel', False):
+                self._in_tunnel = True
+                self.car.warn('entering tunnel — GPS signal weak', 2.5, flash=False)
+            if self.engine:
+                try:
+                    self.engine.volume = .35 + abs(self.car.speed) / 30
+                except Exception:
+                    pass
+        else:
+            if getattr(self, '_in_tunnel', False):
+                self._in_tunnel = False
+                _cam.overlay.color = _C(0, 0, 0, 0)
+        wind = self.roads.on_bridge(p)
+        if wind > 0 and abs(self.car.speed) > 2:
+            self.car.position += self.car.right * math.sin(self.t_total() * 1.7) \
+                * wind * .04
+            if not getattr(self, '_on_bridge', False):
+                self._on_bridge = True
+                self.car.warn('bridge — crosswinds, mind your lane', 3, flash=False)
+        else:
+            self._on_bridge = False
+        region = self.roads.region_at(p)
+        if region != getattr(self, '_region', None):
+            self._region = region
+            self.announcer.visual(f'now entering: {region.replace("_", " ").upper()}',
+                                  3, _C(.7, .9, 1, 1))
+
     def _tick_route(self, dt):
         target, inst, _ = self.route[self.leg]
         d = (Vec3(target) - self.car.position)
@@ -191,6 +252,8 @@ class DrivingScenario(BaseScenario):
                 if abs(self.car.speed) < .6:
                     self._end(True, None)
                 return
+            expected = self.route[self.leg][2]
+            self.evaluator.on_turn_completed(expected, self.car.signal)
             self.leg += 1
             self.best_leg_dist = 1e9
             self._announce_leg()
@@ -206,10 +269,8 @@ class DrivingScenario(BaseScenario):
     def _speed_limit(self):
         p = self.car.position
         if abs(p.z - B) < 12 and abs(p.x - 8) < 18:
-            return 20                                   # school zone
-        if p.z < -B - 22:
-            return 60                                   # highway stretch
-        return 40
+            return 20                                   # school zone overrides
+        return self.roads.speed_limit(p)
 
     def _tick_laws(self, dt):
         limit = self._speed_limit()
@@ -227,7 +288,7 @@ class DrivingScenario(BaseScenario):
                 if key not in self._crossed_lights and not sig.green_for(axis):
                     self._crossed_lights.add(key)
                     self.metrics['red_lights'] += 1
-                    self.car.warn('you ran a red light', 2.5)
+                    self.evaluator.report('red_light', cooldown=1)
                     self.metrics['warnings_shown'] += 1
             elif gap.length() > 10:
                 self._crossed_lights.discard(id(sig))
@@ -247,6 +308,7 @@ class DrivingScenario(BaseScenario):
             gap = (self.school_ped.position - car.position).length()
             if 1.6 < gap < 3.4 and abs(car.speed) > 5:
                 self.metrics['close_calls'] += 1
+                self.evaluator.report('near_miss', cooldown=3, educate=False)
                 from ..audio import get_audio
                 get_audio().play('drive_screech', volume=.5)
                 self.ped_crossing = False                # only counted once
@@ -254,6 +316,7 @@ class DrivingScenario(BaseScenario):
         for ph in self.places['potholes']:
             if (ph - car.position).length() < 1.3 and abs(car.speed) > 3:
                 self.metrics['potholes'] += 1
+                self.evaluator.report('pothole', cooldown=4, educate=False)
                 car.speed *= .55
                 camera.shake(duration=.25, magnitude=1.2)
         # construction cones
@@ -267,13 +330,21 @@ class DrivingScenario(BaseScenario):
         from ..audio import get_audio
         get_audio().play('drive_crash', volume=.6)
         camera.shake(duration=.5, magnitude=2.5)
+        impact_speed = abs(car.speed)
         car.speed = 0
+        tier = self.managers.collision.register(impact_speed, car.position,
+                                                severe=severe)
         car.damage += 2 if severe else 1
         self.metrics['crashes'] += 1
-        car.warn(why, 3)
+        self.evaluator.report('collision_ped' if severe else 'collision',
+                              cooldown=1, educate=False)
+        car.warn(f'{why} ({tier} damage)', 3)
         self.metrics['warnings_shown'] += 1
-        if car.damage >= 4 or severe and car.damage >= 2:
-            self._end(False, 'The drive ended in a serious collision.')
+        if self.managers.damage.totaled or (severe and car.damage >= 2):
+            self.metrics['fines'] = self.metrics.get('fines', 0) + 450
+            self._end(False, 'Major collision: the car is not driveable.\n'
+                             'Towing + repairs: $450. The vehicle is gone for '
+                             'the week.')
 
     def _tick_events(self, dt):
         # scripted: the school pedestrian steps out when you approach
@@ -307,6 +378,7 @@ class DrivingScenario(BaseScenario):
                               flash=True)
                 if rel.length() < 10 and abs(self.car.speed) > 3:
                     self.metrics['close_calls'] += 1
+                    self.evaluator.report('fail_yield_ev', cooldown=6)
 
     def t_total(self):
         return APPOINTMENT - self.time_left
@@ -347,6 +419,9 @@ class DrivingScenario(BaseScenario):
             f'notifications {m["notifications"]} · '
             f'voice nav used {m["voice_navs"]}x · '
             f'blind-spot warnings {int(m["blindspot_saves"])}s\n'
+            f'SAFETY SCORE {int(self.evaluator.score)}/100'
+            + (f' · fines ${m.get("fines", 0)}' if m.get('fines') else '') + '\n'
+            + edu_summary() + '\n'
             + ('Assistive features carried part of the load — that is the '
                'point:\naccessible design, not perfection, makes independence '
                'possible.' if used_assists else
@@ -359,5 +434,17 @@ class DrivingScenario(BaseScenario):
                         success=False)
 
     def cleanup(self):
+        self.managers.cleanup()
+        self.police.cleanup()
+        for v in self.vehicles:           # stop AI from touching the dead car
+            v.player = None
         destroy(self.phone)
+        # destroy the car DIRECTLY: ursina only fires on_destroy (which
+        # removes the dashboard GUI from camera.ui) on explicit destroys,
+        # not when the car dies as a child of the scenario
+        destroy(self.car)
+        for d in getattr(self, 'drops', []):        # rain overlay is on camera.ui
+            destroy(d)
+        if hasattr(self, 'wiper'):
+            destroy(self.wiper)
         super().cleanup()

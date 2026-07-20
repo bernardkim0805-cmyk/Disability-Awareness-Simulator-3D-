@@ -1,6 +1,10 @@
 """Hearing condition simulations. These install/remove hooks on the shared
 AudioManager (see audio.py) so several audio effects can stack: attenuation
 multiplies, muffling and delays are independent flags."""
+if __package__ in (None, ''):    # file was run directly, not imported
+    raise SystemExit('This file is part of the game and cannot be run by itself.\n'
+                     'Run the game from the project folder with:  python main.py')
+
 from .core import AudioEffect
 
 

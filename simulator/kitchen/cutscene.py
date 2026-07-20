@@ -9,6 +9,10 @@ slice cleanly. Tremor / cerebral-palsy style motor conditions add:
 Mistimed cuts on an unsteady hand cost a finger: red flash, health damage,
 and one finger stays on the board. The diorama is built far below the map
 so it never collides with the kitchen."""
+if __package__ in (None, ''):    # file was run directly, not imported
+    raise SystemExit('This file is part of the game and cannot be run by itself.\n'
+                     'Run the game from the project folder with:  python main.py')
+
 import math
 import random
 

@@ -9,6 +9,10 @@ International Dyslexia Association. This simulation is an educational
 approximation — individual experiences vary and cannot be perfectly
 represented.
 """
+if __package__ in (None, ''):    # file was run directly, not imported
+    raise SystemExit('This file is part of the game and cannot be run by itself.\n'
+                     'Run the game from the project folder with:  python main.py')
+
 from .visual import (Glaucoma, MacularDegeneration, Cataracts,
                      DiabeticRetinopathy, RetinitisPigmentosa,
                      Protanopia, Deuteranopia, Tritanopia,

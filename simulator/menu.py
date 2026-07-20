@@ -1,4 +1,8 @@
 """Main menu: a slowly rotating 3D plaza behind the selection UI."""
+if __package__ in (None, ''):    # file was run directly, not imported
+    raise SystemExit('This file is part of the game and cannot be run by itself.\n'
+                     'Run the game from the project folder with:  python main.py')
+
 import random
 
 from ursina import (Entity, Text, Button, Color, Sky, Slider, camera, scene, mouse,
@@ -17,9 +21,12 @@ def _scenario_class(key):
         from .train import TrainScenario
         from .zombies import ZombieEscapeScenario
         from .kitchen import KitchenScenario
+        from .driving import DrivingScenario
+        from .agents import LivingCityScenario
         SCENARIO_CLASSES.update(school=SchoolTestScenario, train=TrainScenario,
                                 zombies=ZombieEscapeScenario,
-                                kitchen=KitchenScenario)
+                                kitchen=KitchenScenario, driving=DrivingScenario,
+                                living_city=LivingCityScenario)
     return SCENARIO_CLASSES[key]
 
 
@@ -121,15 +128,15 @@ class MainMenu(Entity):
         self.scn_buttons = {}
         for i, (key, s) in enumerate(SCENARIOS.items()):
             b = Button(parent=self.ui, text=f"{s['icon']} {s['name']}",
-                       scale=(.34, .07), position=(.52, .24 - i * .085),
+                       scale=(.34, .058), position=(.52, .25 - i * .068),
                        color=Color(.13, .15, .2, .9),
                        highlight_color=Color(.25, .3, .4, 1))
             b.on_click = lambda k=key: self.select_scenario(k)
             self.scn_buttons[key] = b
 
-        self.desc_text = Text(parent=self.ui, text='', position=(.16, -.04),
-                              scale=.77, color=Color(.9, .9, .95, 1))
-        self.active_text = Text(parent=self.ui, text='', position=(.16, -.24),
+        self.desc_text = Text(parent=self.ui, text='', position=(.36, -.09),
+                              scale=.72, color=Color(.9, .9, .95, 1))
+        self.active_text = Text(parent=self.ui, text='', position=(.36, -.26),
                                 scale=.62, color=Color(.68, .88, .8, 1))
 
         # blindness slider — appears only for visual impairment

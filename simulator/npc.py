@@ -1,4 +1,8 @@
 """NPCs: articulated humans that stand, wander waypoints or sprint, and talk."""
+if __package__ in (None, ''):    # file was run directly, not imported
+    raise SystemExit('This file is part of the game and cannot be run by itself.\n'
+                     'Run the game from the project folder with:  python main.py')
+
 import math
 
 from ursina import Entity, Color, Vec3, time, distance_xz, invoke, curve, destroy

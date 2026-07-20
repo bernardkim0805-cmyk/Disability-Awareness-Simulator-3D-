@@ -9,6 +9,10 @@ lot at the north-east. Everything visual a driver must read is modeled:
 lane markings, turn arrows, crosswalks, stop/yield/speed/street signs,
 pedestrian signals, potholes, debris and view-blocking parked cars.
 """
+if __package__ in (None, ''):    # file was run directly, not imported
+    raise SystemExit('This file is part of the game and cannot be run by itself.\n'
+                     'Run the game from the project folder with:  python main.py')
+
 import random
 
 from ursina import Entity, Text, Color, time as utime, Vec3
@@ -122,6 +126,7 @@ def build_city(root, night=False):
 
     # ---- intersections -------------------------------------------------------
     places['lights'] = []
+    places['stops'] = []
     for x in GRID:
         for z in GRID:
             if (x, z) in ((0, 0), (0, B), (B, 0)):        # signalized
@@ -129,6 +134,7 @@ def build_city(root, night=False):
                 _crosswalk(root, (x, 0, z - ROAD_W / 2 - 1), along='x')
                 _crosswalk(root, (x - ROAD_W / 2 - 1, 0, z), along='z')
             else:                                          # stop-controlled
+                places['stops'].append(Vec3(x, 0, z))
                 _sign(root, (x + ROAD_W / 2 + 1, 0, z + ROAD_W / 2 + 1), 'STOP',
                       bg=Color(.8, .1, .1, 1), shape='circle')
             _lane_arrow(root, (x + 2.5, 0, z - ROAD_W / 2 - 4))

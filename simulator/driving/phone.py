@@ -6,6 +6,10 @@ hazard: the scenario counts time spent with it open). With low-vision
 conditions the screen text is deliberately small and dim — the push is
 toward the accessible alternative, voice navigation (V).
 """
+if __package__ in (None, ''):    # file was run directly, not imported
+    raise SystemExit('This file is part of the game and cannot be run by itself.\n'
+                     'Run the game from the project folder with:  python main.py')
+
 import random
 
 from ursina import Entity, Text, Color, camera, time as utime

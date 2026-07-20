@@ -12,6 +12,10 @@ Merge conventions used by VisualEffect.contribute():
     'contrast' (1 = normal, lower = flatter)             -> combine with min()
     'cvd_mat' (mat3 as 9 floats, row-major)              -> last writer wins
 """
+if __package__ in (None, ''):    # file was run directly, not imported
+    raise SystemExit('This file is part of the game and cannot be run by itself.\n'
+                     'Run the game from the project folder with:  python main.py')
+
 from ursina import Shader, camera, Vec2
 from panda3d.core import Vec3 as PVec3
 

@@ -19,6 +19,10 @@ Accessibility design baked into the room itself:
 - ADHD: loud phone notifications + interrupt tasks that block progress
 - motor conditions: input delay + wobble inside the chopping cutscene
 """
+if __package__ in (None, ''):    # file was run directly, not imported
+    raise SystemExit('This file is part of the game and cannot be run by itself.\n'
+                     'Run the game from the project folder with:  python main.py')
+
 import math
 import random
 

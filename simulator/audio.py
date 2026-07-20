@@ -8,6 +8,10 @@ Accessibility design:
   actually experience the game.
 Every effect is synthesized to WAV on first run — no external assets.
 """
+if __package__ in (None, ''):    # file was run directly, not imported
+    raise SystemExit('This file is part of the game and cannot be run by itself.\n'
+                     'Run the game from the project folder with:  python main.py')
+
 import hashlib
 import math
 import random
@@ -19,6 +23,16 @@ import wave
 from pathlib import Path
 
 from .config import STATE
+
+def _valid_wav(path):
+    """A playable wav must exist and hold real audio past the 44-byte header —
+    guards against empty/partial files a killed `say` process can leave behind
+    (which trigger 'wav did not specify a data chunk' errors)."""
+    try:
+        return path.exists() and path.stat().st_size > 256
+    except OSError:
+        return False
+
 
 AUDIO_DIR = Path(__file__).resolve().parent.parent / 'assets' / 'audio'
 TTS_DIR = AUDIO_DIR / 'tts'
@@ -194,9 +208,14 @@ class AudioManager:
         clean = text.replace('"', '').replace('\n', '. ')
         h = hashlib.md5(clean.encode()).hexdigest()[:16]
         path = TTS_DIR / f'{h}.wav'
-        if path.exists():
+        if _valid_wav(path):
             self._play_file(path, volume)
             return
+        if path.exists():                 # a broken/partial file from a prior run
+            try:
+                path.unlink()
+            except OSError:
+                pass
         job = threading.Thread(
             target=subprocess.run,
             args=(['say', '-o', str(path), '--data-format=LEI16@22050', clean],),
@@ -206,8 +225,9 @@ class AudioManager:
 
     def _poll_tts(self, job, path, volume, tries):
         from ursina import invoke, Func
-        if not job.is_alive() and path.exists():
-            self._play_file(path, volume)
+        if not job.is_alive():
+            if _valid_wav(path):          # only play a fully-written file
+                self._play_file(path, volume)
         elif tries < 40:
             invoke(Func(self._poll_tts, job, path, volume, tries + 1), delay=.25)
 
