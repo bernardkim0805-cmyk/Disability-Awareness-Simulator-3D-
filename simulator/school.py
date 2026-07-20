@@ -599,7 +599,7 @@ class TestUI(Entity):
         self.q_text = Text(parent=self, text='', origin=(0, 0), y=.2, scale=1.3,
                            color=Color(1, 1, 1, 1))
         self.opts = [Text(parent=self, text='', origin=(0, 0), y=.08 - i * .08,
-                          scale=1.1, color=Color(.85, .85, .95, 1)) for i in range(3)]
+                          scale=1.1, color=Color(1, 1, 1, 1)) for i in range(3)]
         self.fake_opt = Text(parent=self, text='', origin=(0, 0), y=-.19, scale=1,
                              color=Color(.7, .45, .9, .9))
         self.feedback = Text(parent=self, text='', origin=(0, 0), y=-.27, scale=1.1,
@@ -623,8 +623,12 @@ class TestUI(Entity):
         radius = .0015 + intensity * intensity * .012
         for source, ghosts in self.paper_blur:
             base_alpha = source._paper_alpha
+            # Use one opacity for the core and every offset copy. Previously
+            # the low-opacity copies looked gray against the dark paper,
+            # creating a visible halo in a different apparent color.
+            layer_alpha = base_alpha * (.34 if intensity else 1)
             source.color = Color(source.color.r, source.color.g, source.color.b,
-                                 base_alpha * (.38 if intensity else 1))
+                                 layer_alpha)
             for ghost, (dx, dy) in zip(ghosts, directions):
                 ghost.enabled = intensity > .001
                 if not ghost.enabled:
@@ -633,7 +637,7 @@ class TestUI(Entity):
                 ghost.position = (source.x + dx * radius, source.y + dy * radius, source.z)
                 ghost.scale = source.scale
                 ghost.color = Color(source.color.r, source.color.g, source.color.b,
-                                    base_alpha * .105)
+                                    layer_alpha)
 
     def tick(self, dt, effects):
         self.timer -= dt
@@ -682,7 +686,7 @@ class TestUI(Entity):
         self.q_text.color = Color(1, 1, 1, alpha)
         for t, line in zip(self.opts, opt_lines):
             t.text = line
-            t.color = Color(.85, .85, .95, alpha)
+            t.color = Color(1, 1, 1, alpha)
 
         if STATE.disability == 'schizophrenia' and random.random() < .004:
             self.fake_opt.text = f'4)  {random.choice(FAKE_OPTIONS)}'
