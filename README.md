@@ -127,8 +127,8 @@ Each experience should be discussed using three questions:
 
 ### Visual impairment
 
-- **In the game:** A darkness-and-fog overlay is adjustable from the menu or with **[** and
-  **]**. macOS narration provides an audio channel for selected text.
+- **In the game:** A progressive defocus-blur effect is adjustable from the menu or with
+  **[** and **]**. macOS narration provides an audio channel for selected text.
 - **Research connection:** Visual impairment includes many different patterns and causes;
   it is not synonymous with complete darkness. WHO notes that vision rehabilitation and
   tools such as mobility training, braille, and digital assistive technologies can support
@@ -136,9 +136,9 @@ Each experience should be discussed using three questions:
 - **Design lesson:** Contrast, scalable text, screen-reader-compatible information, audio
   description, tactile cues, and consistent navigation provide alternatives to vision-only
   information.
-- **Limit:** Uniform darkness and fog are broad game abstractions, not a representation of
-  most eye conditions. The Accessibility Lab contains more specific—but still simplified—
-  field-loss and visual-disturbance effects.
+- **Limit:** Uniform blur is a broad game abstraction, not a representation of most eye
+  conditions. The Accessibility Lab contains more specific—but still simplified—field-loss
+  and visual-disturbance effects.
 
 ### Deaf / hard of hearing
 
@@ -291,7 +291,7 @@ over or hide the same game output; they do not mean real conditions cannot coexi
 - **1 / 2 / 3** answer school-test questions.
 - **V** toggles school accommodations.
 - **F** returns focus during ADHD attention-capture effects.
-- **[ / ]** adjusts the original visual-impairment overlay.
+- **[ / ]** adjusts the original visual-impairment blur.
 - Hold **N** to compare the normal rendering when compatible visual lab effects are active.
 - **Esc** returns to the menu or exits.
 
@@ -367,15 +367,15 @@ game as a faithful simulation. Accessed July 20, 2026.
 [^machado]: Gustavo M. Machado, Manuel M. Oliveira, and Leandro A. F. Fernandes, [“A Physiologically-based Model for Simulation of Color Vision Deficiency”](https://doi.org/10.1109/TVCG.2009.113), *IEEE Transactions on Visualization and Computer Graphics* 15(6), 2009.
 [^visual-snow]: National Organization for Rare Disorders, [Visual Snow Syndrome](https://rarediseases.org/rare-diseases/visual-snow-syndrome/).
 [^migraine-aura]: American Migraine Foundation, [Migraine With Aura](https://americanmigrainefoundation.org/resource-library/migraine-with-aura/).
-[^veda-oscillopsia]: Vestibular Disorders Association, [Oscillopsia](https://vestibular.org/article/diagnosis-treatment/vision-hearing/oscillopsia/).
+[^veda-oscillopsia]: Kim et al., [“Bilateral Vestibular Weakness”](https://pmc.ncbi.nlm.nih.gov/articles/PMC5990606/), *Current Opinion in Neurology* 31(1), 2018. The review describes oscillopsia as the illusion that the environment moves with head movement when the vestibulo-ocular reflex does not stabilize gaze.
 [^nidcd-tinnitus]: National Institute on Deafness and Other Communication Disorders, [What Is Tinnitus?](https://www.nidcd.nih.gov/health/tinnitus).
 [^asha-capd]: American Speech-Language-Hearing Association, [Central Auditory Processing Disorder](https://www.asha.org/practice-portal/clinical-topics/central-auditory-processing-disorder/).
 [^ninds-parkinsons]: National Institute of Neurological Disorders and Stroke, [Parkinson's Disease](https://www.ninds.nih.gov/health-information/disorders/parkinsons-disease).
 [^ninds-tremor]: National Institute of Neurological Disorders and Stroke, [Tremor](https://www.ninds.nih.gov/health-information/disorders/tremor).
 [^veda-disorders]: Vestibular Disorders Association, [About Vestibular Disorders](https://vestibular.org/article/what-is-vestibular/about-vestibular-disorders/).
 [^ninds-prosopagnosia]: National Institute of Neurological Disorders and Stroke, [Prosopagnosia](https://www.ninds.nih.gov/health-information/disorders/prosopagnosia).
-[^stroke-neglect]: American Stroke Association, [Visual and Spatial Problems After Stroke](https://www.stroke.org/en/about-stroke/effects-of-stroke/physical-effects/visual-and-spatial-problems).
-[^memory]: National Institute on Aging, [Memory, Forgetfulness, and Aging: What's Normal and What's Not?](https://www.nia.nih.gov/health/memory-loss-and-forgetfulness/memory-forgetfulness-and-aging-whats-normal-and-whats-not).
+[^stroke-neglect]: American Stroke Association, [Spatial Neglect](https://www.stroke.org/en/about-stroke/effects-of-stroke/cognitive-effects/spatial-neglect).
+[^memory]: National Institute on Aging, [Memory Loss and Forgetfulness](https://www.nia.nih.gov/health/memory-loss-and-forgetfulness).
 
 ## Contributing
 
