@@ -83,11 +83,12 @@ def building(parent, position, size, style='brick', lit_ratio=.4,
     return root
 
 
-def tree(parent, position, scale=1.0):
+def tree(parent, position, scale=1.0, solid=False):
     root = Entity(parent=parent, position=position, scale=scale,
                   rotation_y=random.uniform(0, 360))
     Entity(parent=root, model='cube', position=(0, 1.1, 0), scale=(.35, 2.2, .35),
-           color=Color(.35, .25, .15, 1))
+           color=Color(.35, .25, .15, 1),
+           collider='box' if solid else None)
     green = Color(.2 + random.uniform(0, .1), .42 + random.uniform(0, .12), .2, 1)
     for pos, s in [((0, 2.8, 0), 2.2), ((.7, 2.3, .3), 1.4), ((-.6, 2.4, -.3), 1.5),
                    ((0, 3.6, 0), 1.3)]:
@@ -98,10 +99,10 @@ def tree(parent, position, scale=1.0):
     return root
 
 
-def street_lamp(parent, position, on=True, warm=True):
+def street_lamp(parent, position, on=True, warm=True, solid=False):
     root = Entity(parent=parent, position=position)
     Entity(parent=root, model='cube', position=(0, 2.4, 0), scale=(.16, 4.8, .16),
-           color=Color(.2, .2, .23, 1))
+           color=Color(.2, .2, .23, 1), collider='box' if solid else None)
     Entity(parent=root, model='cube', position=(0, 4.85, .4), scale=(.12, .12, 1),
            color=Color(.2, .2, .23, 1))
     glow_color = Color(1, .85, .5, 1) if warm else Color(.8, .9, 1, 1)

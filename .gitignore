@@ -13,3 +13,4 @@ assets/audio/*_muffled.wav
 assets/audio/tinnitus_*.wav
 review-screenshots/
 artifacts/screenshots/
+.claude/settings.local.json

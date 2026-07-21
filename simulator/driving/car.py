@@ -211,7 +211,26 @@ class PlayerCar(Entity):
         if self.wobble > 0:
             steer += math.sin(self.t * 8.3) * .12 * self.wobble
         self.rotation_y += steer * 60 * dt * (self.speed / self.MAX_SPEED)
-        self.position += self.forward * self.speed * dt
+        # world collision: don't drive through anything with a collider
+        # (buildings, walls, guardrails, bridge, props). Pedestrians and
+        # traffic have no colliders — those are handled as crashes elsewhere.
+        move = self.speed * dt
+        if abs(move) > .001 and self._blocked_ahead(move):
+            self.speed = 0
+            move = 0
+        self.position += self.forward * move
+
+    def _blocked_ahead(self, move):
+        from ursina import raycast, Vec3
+        d = self.forward if move > 0 else -self.forward
+        reach = abs(move) + 2.2                       # bumper + lookahead
+        for lat in (-.85, 0, .85):                    # 3 rays across the width
+            origin = self.world_position + Vec3(0, .5, 0) + self.right * lat \
+                + d * 2.0
+            hit = raycast(origin, d, distance=reach, ignore=(self,), debug=False)
+            if hit.hit:
+                return True
+        return False
         self.wheel.rotation_z = -steer * 90
         self.fuel = max(0, self.fuel - dt * .0006 * (1 + abs(self.speed) / 8))
 

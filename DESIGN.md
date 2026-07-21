@@ -232,6 +232,28 @@ changes; region-aware speed limits (downtown 40, highway 90, etc.); heavy
 Scale is bounded (fixed-function primitive renderer) — AAA-structured, not a
 literal square-mile map.
 
+## Driving pedestrians + collision — `driving/pedestrians.py`, `car.py`
+
+`PedestrianCrowd` spawns 450 rule-following pedestrians on downtown
+sidewalks. Each is a logical `Pedestrian` with a WALK/WAIT/CROSS/DOWN state
+machine: it walks the sidewalk and only steps onto the road at a crossing
+after `_may_cross()` confirms the signal stops traffic on that road AND the
+lane is clear (unsignalled crossings require a fully clear road). **LOD**:
+the nearest ≤16 peds within 30 u use the full articulated classroom rig
+(`Human`); everyone else within 90 u is a 2-primitive `_Proxy`; beyond that
+the body is freed — so you see detailed people up close without 20k
+primitives. Peds are crashable: `check_car_collision()` knocks one down
+(3 s) and triggers a severe car crash. Config: count is one arg
+(`PedestrianCrowd(self, count=450)`).
+
+Car world-collision: `PlayerCar._blocked_ahead()` casts 3 forward rays and
+zeroes speed if any hits a collider, so the car can't drive through
+buildings, walls, guardrails, the bridge, or props. Pedestrians and traffic
+have NO colliders (rays pass through) — those are handled as crashes, not
+wall-stops. Props got colliders via an opt-in `solid=` flag on the shared
+`world.tree/street_lamp` builders (default off, so other scenarios are
+unaffected) plus direct `collider='box'` on cones/containers/pumps/towers.
+
 ## Driving world managers + damage — `driving/managers.py`, `damage.py`
 
 Modular manager layer over the existing systems (the brief's architecture):

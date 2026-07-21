@@ -23,10 +23,11 @@ def _scenario_class(key):
         from .kitchen import KitchenScenario
         from .driving import DrivingScenario
         from .agents import LivingCityScenario
+        from .bedtime import BedtimeScenario
         SCENARIO_CLASSES.update(school=SchoolTestScenario, train=TrainScenario,
                                 zombies=ZombieEscapeScenario,
                                 kitchen=KitchenScenario, driving=DrivingScenario,
-                                living_city=LivingCityScenario)
+                                living_city=LivingCityScenario, bedtime=BedtimeScenario)
     return SCENARIO_CLASSES[key]
 
 

@@ -26,6 +26,8 @@ from .phone import Phone, NotificationEngine
 from .sounds import ensure_drive_assets, say_nav
 from .worldgen import WorldGeneration, RoadNetworkSystem
 from .managers import WorldManager
+from .minimap import MinimapGPS
+from .pedestrians import PedestrianCrowd
 from .laws import DrivingEvaluator
 from .police import PoliceManager, edu_summary
 
@@ -153,6 +155,8 @@ class DrivingScenario(BaseScenario):
         self.evaluator = DrivingEvaluator(self)
         self.police = PoliceManager(self, self.evaluator, parent=self)
         WorldManager(self)      # world.managers.{traffic,pedestrian,collision,...}
+        self.minimap = MinimapGPS(self)
+        self.crowd = PedestrianCrowd(self, count=450)
 
         self.set_objective("Doctor's appointment across the city — you're "
                            'running late. Drive safely and park in the green bay')
@@ -190,6 +194,7 @@ class DrivingScenario(BaseScenario):
         self._tick_laws(dt)
         self.evaluator.tick(dt)
         self.managers.update(dt)
+        self.crowd.update()
         self._tick_infrastructure(dt)
         self._tick_hazards(dt)
         self._tick_events(dt)
@@ -207,10 +212,13 @@ class DrivingScenario(BaseScenario):
             self._end(False, 'The appointment started without you.')
 
     def _tick_infrastructure(self, dt):
-        """Tunnel: darken the view + echo the engine/siren. Bridge: crosswind
-        nudges the car. Region name shows on the HUD."""
+        """Tunnel: darken the view + echo the engine/siren. Bridge: raise the
+        car onto the deck + crosswind. Region name shows on the HUD."""
         from ursina import camera as _cam, Color as _C
         p = self.car.position
+        # ride the bridge deck: ease the car up the ramp and across the span
+        target_y = self.roads.ground_height(p)
+        self.car.y += (target_y - self.car.y) * min(1, 8 * dt)
         dark = self.roads.in_tunnel(p)
         if dark > 0:
             _cam.overlay.color = _C(0, 0, 0, min(.7, dark))
@@ -303,6 +311,8 @@ class DrivingScenario(BaseScenario):
         for npc in self.npcs:
             if (npc.position - car.position).length() < 1.6:
                 self._crash('you hit a pedestrian', severe=True)
+        if abs(car.speed) > 1 and self.crowd.check_car_collision(car):
+            self._crash('you hit a pedestrian', severe=True)
         # near misses count too
         if self.ped_crossing:
             gap = (self.school_ped.position - car.position).length()
@@ -434,6 +444,8 @@ class DrivingScenario(BaseScenario):
                         success=False)
 
     def cleanup(self):
+        destroy(self.minimap)
+        destroy(self.crowd)
         self.managers.cleanup()
         self.police.cleanup()
         for v in self.vehicles:           # stop AI from touching the dead car

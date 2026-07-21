@@ -92,7 +92,7 @@ def _crosswalk(parent, pos, along='x'):
 
 def _sign(parent, pos, text, bg=Color(.85, .1, .1, 1), shape='circle', scale=.8):
     Entity(parent=parent, model='cube', position=(pos[0], 1.4, pos[2]),
-           scale=(.1, 2.8, .1), color=Color(.4, .4, .42, 1))
+           scale=(.1, 2.8, .1), collider='box', color=Color(.4, .4, .42, 1))
     s = Entity(parent=parent, model=shape, position=(pos[0], 2.6, pos[2]),
                scale=scale, color=bg)
     s.setLightOff()
@@ -169,7 +169,7 @@ def build_city(root, night=False):
     # construction zone: east road (B, z 8..20), right lane closed
     for i in range(6):
         cone = Entity(parent=root, model='cube', position=(B + 2.2, .4, 6 + i * 2.6),
-                      scale=(.35, .8, .35), color=Color(1, .45, .1, 1))
+                      scale=(.35, .8, .35), collider='box', color=Color(1, .45, .1, 1))
         cone.setLightOff()
     Entity(parent=root, model='cube', position=(B + 2.2, .6, 4),
            scale=(2.4, 1.2, .2), color=Color(1, .6, .15, 1)).setLightOff()
@@ -232,6 +232,6 @@ def build_city(root, night=False):
     if night:
         for x in GRID:
             for z in range(-B - 10, B + 30, 22):
-                world.street_lamp(root, (x + ROAD_W / 2 + 1.5, 0, z), on=True)
+                world.street_lamp(root, (x + ROAD_W / 2 + 1.5, 0, z), on=True, solid=True)
         world.night_sky(root)
     return places

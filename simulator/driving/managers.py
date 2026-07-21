@@ -63,6 +63,9 @@ class PedestrianManager(_Manager):
                     npc.walking = True
                 except Exception:
                     pass
+        crowd = getattr(self.world, 'crowd', None)
+        if crowd:
+            crowd.react(position)
 
 
 class PoliceManagerFacade(_Manager):

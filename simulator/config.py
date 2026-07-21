@@ -94,6 +94,11 @@ SCENARIOS = {
         icon='<CITY>',
         desc='An autonomous crowd — every NPC has its own\npersonality, mood, memory and reactions.\nTrigger events and watch them decide.',
     ),
+    'bedtime': dict(
+        name='Getting Ready for Bed',
+        icon='<NIGHT>',
+        desc='A full nightly routine in a lived-in home.\nRandomized tasks; every disability reshapes\nwashing, reading, showering and remembering.',
+    ),
     'kitchen': dict(
         name='Home Kitchen',
         icon='<COOK>',

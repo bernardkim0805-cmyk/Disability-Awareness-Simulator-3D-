@@ -141,6 +141,8 @@ def _build_bridge(root, places, night):
     cx, cz = cfg['center']
     L = cfg['length']
     wy = cfg['water_y']
+    # a road leading from downtown up onto the bridge and down the far side
+    _road(root, (cx, 0, cz), 200, 12, 'z', dashes=True)
     # the river below (and the world under the bridge: water + a boat + rail)
     Entity(parent=root, model='cube', position=(cx, wy + .2, cz),
            scale=(200, .4, 46), color=Color(.2, .35, .5, .9)).setLightOff()
@@ -158,7 +160,7 @@ def _build_bridge(root, places, night):
         tz = cz + end * L / 3
         for sx in (-7, 7):
             Entity(parent=root, model='cube', position=(cx + sx, 12, tz),
-                   scale=(1.4, 24, 1.4), color=Color(.7, .4, .35, 1))
+                   scale=(1.4, 24, 1.4), collider='box', color=Color(.7, .4, .35, 1))
             for c in range(1, 8):
                 Entity(parent=root, model='cube',
                        position=(cx + sx, 3.5 + c * 2.4, tz - end * c * 3),
@@ -190,7 +192,7 @@ def _build_district(root, places, name, rng):
                 continue
             world.building(root, (hx, 0, hz), (7, rng.uniform(4, 6), 7),
                            style='brick', lit_ratio=.4, tint=tint)
-            world.tree(root, (hx + 5, 0, hz + 4))
+            world.tree(root, (hx + 5, 0, hz + 4), solid=True)
         Text(parent=root, text='MAPLE HEIGHTS', position=(cx, 4, cz + r - 8),
              origin=(0, 0), scale=9, billboard=True,
              color=Color(.9, .95, .8, 1)).setLightOff()
@@ -206,7 +208,7 @@ def _build_district(root, places, name, rng):
             Entity(parent=root, model='cube',
                    position=(cx + rng.uniform(-r, r), 1,
                              cz + rng.uniform(-r, r)),
-                   scale=(3, 2, 8), color=rng.choice(
+                   scale=(3, 2, 8), collider='box', color=rng.choice(
                        [Color(.5, .3, .25, 1), Color(.25, .4, .35, 1)]))
         Text(parent=root, text='PORT DISTRICT', position=(cx, 5, cz + r - 8),
              origin=(0, 0), scale=9, billboard=True,
@@ -218,7 +220,7 @@ def _build_district(root, places, name, rng):
         for _ in range(30):
             world.tree(root, (cx + rng.uniform(-r, r), 0,
                               cz + rng.uniform(-r, r)),
-                       scale=rng.uniform(.9, 1.6))
+                       scale=rng.uniform(.9, 1.6), solid=True)
         for _ in range(3):                              # barns / farmhouses
             world.building(root, (cx + rng.uniform(-r + 12, r - 12), 0,
                                   cz + rng.uniform(-r + 12, r - 12)),
@@ -235,9 +237,9 @@ def _build_district(root, places, name, rng):
                scale=(10, .4, 6), color=Color(.85, .8, .5, 1))          # canopy
         for px in (gx - 3, gx + 3):
             Entity(parent=root, model='cube', position=(px, .1, gz),
-                   scale=(.4, 6, .4), color=Color(.6, .6, .6, 1))
+                   scale=(.4, 6, .4), collider='box', color=Color(.6, .6, .6, 1))
             Entity(parent=root, model='cube', position=(px, 1.1, gz + 1.6),
-                   scale=(.5, 1.2, .3), color=Color(.8, .2, .2, 1))     # pump
+                   scale=(.5, 1.2, .3), collider='box', color=Color(.8, .2, .2, 1))
         Text(parent=root, text='FUEL', position=(gx, 4, gz), origin=(0, 0),
              scale=8, billboard=True, color=Color(1, .9, .3, 1)).setLightOff()
         places.setdefault('gas_stations', []).append(Vec3(gx, 0, gz))
@@ -306,4 +308,24 @@ class RoadNetworkSystem:
         d = pos - b['center']
         if abs(d.x) < b['width'] + 2 and abs(d.z) < b['half']:
             return b['wind']
+        return 0.0
+
+    RAMP = 26.0                       # length of each approach ramp
+
+    def ground_height(self, pos):
+        """Deck height the car should ride at: 0 at grade, easing up the
+        approach ramps to the bridge deck, flat across the span."""
+        b = self.places.get('bridge')
+        if not b:
+            return 0.0
+        deck = b['center'].y
+        d = pos - b['center']
+        if abs(d.x) > b['width'] + 2:
+            return 0.0
+        az = abs(d.z)
+        if az <= b['half']:
+            return deck               # on the span
+        if az <= b['half'] + self.RAMP:
+            t = 1 - (az - b['half']) / self.RAMP   # 1 at deck edge -> 0 at grade
+            return deck * max(0.0, t)
         return 0.0
