@@ -43,8 +43,10 @@ class BaseScenario(Entity):
         Entity(parent=self.hud, model='quad', color=Color(.04, .05, .08, .78),
                position=(0, .455), scale=(1.15, .075), z=.5)
         d = DISABILITIES[STATE.disability or 'none']
-        Text(parent=self.hud, text=f"{d['icon']} {d['name']}", position=(-.86, .43),
-             scale=.85, color=Color(.8, .8, .8, .9))
+        # Reserved HUD lanes: objective (.46), identity/status (.385),
+        # announcements (.29), interaction (-.2), controls (-.47).
+        Text(parent=self.hud, text=f"{d['icon']} {d['name']}", position=(-.86, .385),
+             scale=.78, color=Color(.8, .8, .8, .9))
         self.objective_text = Text(parent=self.hud, text='', origin=(0, 0), y=.46,
                                    scale=1.0, color=Color(1, 1, .6, 1))
         self.interact_hint = Text(parent=self.hud, text='', origin=(0, 0), y=-.2,
@@ -52,8 +54,9 @@ class BaseScenario(Entity):
         controls = 'WASD move · mouse look · E interact · Esc menu'
         if STATE.lab_effects:
             controls += ' · hold N compare'
-        Text(parent=self.hud, text=controls, position=(0, -.48), origin=(0, 0),
-             scale=.75, color=Color(.55, .55, .55, 1))
+        self.controls_text = Text(parent=self.hud, text=controls, position=(0, -.47),
+                                  origin=(0, 0), scale=.68,
+                                  color=Color(.55, .55, .55, 1))
 
         self.build()
         mouse.locked = True

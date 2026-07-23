@@ -107,8 +107,8 @@ class KitchenScenario(BaseScenario):
         self._start_ambience()
         self.player.rotation_y = 205        # face the counters and stove
 
-        self.health_text = Text(parent=self.hud, text='', position=(.68, .43),
-                                scale=.9, color=Color(.95, .6, .6, 1))
+        self.health_text = Text(parent=self.hud, text='', position=(.66, .385),
+                                scale=.78, color=Color(.95, .6, .6, 1))
         self.set_objective('Read the recipe card on the counter (E)')
 
     # -------------------------------------------------------------- the room

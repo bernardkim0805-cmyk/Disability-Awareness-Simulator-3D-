@@ -57,10 +57,8 @@ class BedtimeScenario(BaseScenario):
         self._refresh_checklist()
         self.set_objective(f'Bedtime routine — {len(self.routine)} tasks. '
                            'Follow the checklist (order matters!)')
-        Text(parent=self.hud, text='WASD move · mouse look · E interact · '
-                                   'J re-read checklist · Esc menu',
-             position=(0, -.455), origin=(0, 0), scale=.7,
-             color=Color(.6, .6, .65, 1))
+        self.controls_text.text = ('WASD move · mouse look · E interact · '
+                                   'J re-read checklist · Esc menu')
 
     # ------------------------------------------------------------- checklist
     def _cur(self):
