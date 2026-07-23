@@ -77,6 +77,10 @@ class Pedestrian:
     def _new_target(self):
         return self.rng.uniform(-B - 30, B + 30)
 
+    def _at_signal(self):
+        """True only when standing at a signal-controlled crossing."""
+        return self._nearest_signal() is not None
+
     def _nearest_signal(self):
         best, bd = None, 8
         for sig in self.crowd.signals:
@@ -98,11 +102,11 @@ class Pedestrian:
 
     def _may_cross(self):
         sig = self._nearest_signal()
-        if sig is not None:
-            # cross a z-road when E-W has green (z-traffic stopped); vice-versa
-            traffic_stopped = not sig.green_for('ns' if self.axis == 'z' else 'ew')
-            return traffic_stopped and self._road_is_clear()
-        return self._road_is_clear(span=13)     # unsignalled: only if truly clear
+        if sig is None:
+            return False                        # never cross away from a signal
+        # cross a z-road when E-W has green (z-traffic stopped); vice-versa
+        traffic_stopped = not sig.green_for('ns' if self.axis == 'z' else 'ew')
+        return traffic_stopped and self._road_is_clear()
 
     # ----------------------------------------------------------------- logic
     def tick(self, dt):
@@ -117,15 +121,21 @@ class Pedestrian:
             self.along += step
             if abs(self.along - self.target_along) < .5:
                 self.target_along = self._new_target()
-                # occasionally decide to cross at an intersection
-                if self.rng.random() < .5 and abs(self.along) < B + 12:
+                # only consider crossing at a real signalized intersection,
+                # and only occasionally — like a real pedestrian who mostly
+                # just walks the sidewalk
+                if self._at_signal() and self.rng.random() < .12:
                     self.state = 'WAIT'
+                    self.wait_t = 0
             self.pos = self._point(self.along, self.side)
 
         elif self.state == 'WAIT':
-            if self._may_cross():
+            self.wait_t = getattr(self, 'wait_t', 0) + dt
+            if self._may_cross():           # signal stops traffic AND road clear
                 self.state = 'CROSS'
                 self.cross_t = 0
+            elif self.wait_t > 25:          # patience runs out -> stay put, walk on
+                self.state = 'WALK'
 
         elif self.state == 'CROSS':
             self.cross_t += dt

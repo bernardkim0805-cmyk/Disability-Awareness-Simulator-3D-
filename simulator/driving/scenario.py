@@ -156,7 +156,7 @@ class DrivingScenario(BaseScenario):
         self.police = PoliceManager(self, self.evaluator, parent=self)
         WorldManager(self)      # world.managers.{traffic,pedestrian,collision,...}
         self.minimap = MinimapGPS(self)
-        self.crowd = PedestrianCrowd(self, count=450)
+        self.crowd = PedestrianCrowd(self, count=120)
 
         self.set_objective("Doctor's appointment across the city — you're "
                            'running late. Drive safely and park in the green bay')
