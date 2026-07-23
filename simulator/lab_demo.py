@@ -49,16 +49,16 @@ class LabExperienceDemo(Entity):
         Text(parent=self.ui, text="ORIGINAL EXPERIENCE LIVE DEMO", origin=(0, 0), y=.46,
              scale=1.15, color=Color(1, .82, .35, 1))
         experience = DISABILITIES[STATE.disability or "none"]["name"]
-        Text(parent=self.ui, text=f"Active: {experience}", position=(-.84, .41),
-             scale=.78, color=Color(.75, .9, .82, 1))
+        Text(parent=self.ui, text=f"Active: {experience}", position=(-.84, .335),
+             scale=.72, color=Color(.75, .9, .82, 1))
         Text(parent=self.ui,
              text="Educational approximation—not a difficulty or horror mode. Experiences vary.",
-             origin=(0, 0), y=.40, scale=.68, color=Color(.88, .88, .94, 1))
+             origin=(0, 0), y=.385, scale=.62, color=Color(.88, .88, .94, 1))
         Text(parent=self.ui,
              text="Try both routes · listen for the bell · read the sign · F refocus · Esc return",
              origin=(0, 0), y=-.47, scale=.7, color=Color(.78, .8, .86, 1))
         Text(parent=self.ui, text="VISUAL ALTERNATIVE: ramp route open on the right",
-             origin=(0, 0), y=.34, scale=.72, color=Color(.5, 1, .72, 1))
+             origin=(0, 0), y=.315, scale=.68, color=Color(.5, 1, .72, 1))
 
         invoke(self._play_audio_information, delay=1.2)
         mouse.locked = True

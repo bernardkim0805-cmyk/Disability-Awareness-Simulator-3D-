@@ -161,10 +161,8 @@ class DrivingScenario(BaseScenario):
         self.set_objective("Doctor's appointment across the city — you're "
                            'running late. Drive safely and park in the green bay')
         self._announce_leg()
-        Text(parent=self.hud, text='W/S drive · A/D steer · Q/R signals · H horn · '
-                                   'TAB phone · V voice nav · P dismiss',
-             position=(0, -.455), origin=(0, 0), scale=.68,
-             color=Color(.6, .6, .65, 1))
+        self.controls_text.text = ('W/S drive · A/D steer · Q/R signals · H horn · '
+                                   'TAB phone · V voice nav · P dismiss · Esc menu')
 
     # ------------------------------------------------------------- navigation
     def _announce_leg(self):

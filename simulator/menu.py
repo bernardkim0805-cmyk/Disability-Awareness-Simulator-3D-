@@ -135,8 +135,6 @@ class MainMenu(Entity):
             b.on_click = lambda k=key: self.select_scenario(k)
             self.scn_buttons[key] = b
 
-        self.desc_text = Text(parent=self.ui, text='', position=(.36, -.09),
-                              scale=.72, color=Color(.9, .9, .95, 1))
         self.active_text = Text(parent=self.ui, text='', position=(.36, -.26),
                                 scale=.62, color=Color(.68, .88, .8, 1))
 
@@ -186,9 +184,6 @@ class MainMenu(Entity):
         self._refresh_desc()
 
     def _refresh_desc(self):
-        d = DISABILITIES[STATE.disability or 'none']
-        s = SCENARIOS[STATE.scenario]
-        self.desc_text.text = f"{d['desc']}\n\n{s['icon']} {s['name']}: {s['desc']}"
         self.active_text.text = active_summary(STATE)
 
     def _on_blindness(self):

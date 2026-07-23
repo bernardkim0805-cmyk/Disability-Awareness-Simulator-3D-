@@ -26,6 +26,83 @@ WHISPERS = [
 ]
 
 
+class VisualUIBlur(Entity):
+    """Apply visual-mode blur to UI text created by any scenario."""
+
+    DIRECTIONS = ((1, 0), (-1, 0), (0, 1), (0, -1),
+                  (.707, .707), (-.707, .707), (.707, -.707), (-.707, -.707))
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.copies = []
+        self.scan_timer = 0
+
+    @staticmethod
+    def _exempt(source):
+        node = source
+        while node and node != camera.ui:
+            if getattr(node, 'visual_blur_exempt', False):
+                return True
+            node = getattr(node, 'parent', None)
+        return False
+
+    def _scan(self):
+        known = {id(source) for source, _, _ in self.copies}
+        for source in list(scene.entities):
+            if (not isinstance(source, Text)
+                    or getattr(source, '_visual_blur_copy', False)
+                    or id(source) in known
+                    or not source.has_ancestor(camera.ui)):
+                continue
+            ghosts = []
+            for _ in self.DIRECTIONS:
+                ghost = Text(parent=source.parent, text='', origin=source.origin,
+                             color=source.color, enabled=False)
+                ghost._visual_blur_copy = True
+                ghosts.append(ghost)
+            self.copies.append((source, ghosts, source.color.a))
+
+    def update(self):
+        self.scan_timer -= time.dt
+        if self.scan_timer <= 0:
+            self.scan_timer = .15
+            self._scan()
+
+        radius = .0015 + STATE.blindness * STATE.blindness * .012
+        live = []
+        for source, ghosts, base_alpha in self.copies:
+            if source not in scene.entities:
+                for ghost in ghosts:
+                    destroy(ghost)
+                continue
+            visible = source.enabled and not self._exempt(source)
+            layer_alpha = base_alpha * .34
+            source.color = Color(source.color.r, source.color.g, source.color.b,
+                                 layer_alpha if visible else base_alpha)
+            for ghost, (dx, dy) in zip(ghosts, self.DIRECTIONS):
+                ghost.enabled = visible
+                if not visible:
+                    continue
+                ghost.text = source.text
+                ghost.position = (source.x + dx * radius, source.y + dy * radius, source.z)
+                ghost.rotation = source.rotation
+                ghost.scale = source.scale
+                # Core and blur copies share exactly the same RGBA, preventing
+                # a sharp bright label surrounded by a differently colored halo.
+                ghost.color = source.color
+            live.append((source, ghosts, base_alpha))
+        self.copies = live
+
+    def cleanup(self):
+        for source, ghosts, base_alpha in self.copies:
+            if source in scene.entities:
+                source.color = Color(source.color.r, source.color.g, source.color.b, base_alpha)
+            for ghost in ghosts:
+                destroy(ghost)
+        self.copies.clear()
+        destroy(self)
+
+
 class EffectsManager(Entity):
     """Attach once per scenario. Reads STATE.disability and drives overlays,
     distractions, hallucinations and the visual-blur level."""
@@ -45,18 +122,19 @@ class EffectsManager(Entity):
 
         d = STATE.disability
         if d == 'adhd':
-            self.focus_label = Text(parent=self.ui, text='FOCUS', position=(-.86, .44),
-                                    scale=.8, color=Color(.95, .6, .15, 1))
+            self.focus_label = Text(parent=self.ui, text='FOCUS', position=(-.86, .335),
+                                    scale=.72, color=Color(.95, .6, .15, 1))
             self.focus_bg = Entity(parent=self.ui, model='quad', color=Color(.2, .2, .2, .8),
-                                   position=(-.72, .435), scale=(.2, .02))
+                                   position=(-.72, .33), scale=(.2, .02))
             self.focus_bar = Entity(parent=self.ui, model='quad', color=Color(.95, .6, .15, 1),
-                                    position=(-.82, .435), origin=(-.5, 0), scale=(.2, .02))
+                                    position=(-.82, .33), origin=(-.5, 0), scale=(.2, .02))
         elif d == 'schizophrenia':
             self.shadow_figure = self._make_shadow()
         elif d == 'visual':
             self._apply_blindness()
-            Text(parent=self.ui, text='[ and ] adjust blur', position=(-.86, .44),
-                 scale=.8, color=Color(.7, .7, .7, .8))
+            self.ui_blur = VisualUIBlur()
+            Text(parent=self.ui, text='[ / ] blur intensity', position=(-.86, .335),
+                 scale=.7, color=Color(.7, .7, .7, .8))
 
     # ------------------------------------------------------------------ visual
     def _apply_blindness(self):
@@ -167,6 +245,9 @@ class EffectsManager(Entity):
                 self.announcer.visual(f'blur: {int(STATE.blindness * 100)}%', duration=1.5)
 
     def on_destroy(self):
+        if getattr(self, 'ui_blur', None):
+            self.ui_blur.cleanup()
+            self.ui_blur = None
         if self.shadow_figure:
             destroy(self.shadow_figure)
             self.shadow_figure = None

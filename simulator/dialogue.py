@@ -104,9 +104,10 @@ class Announcer(Entity):
 
     def __init__(self, **kwargs):
         super().__init__(parent=camera.ui, **kwargs)
+        self.notice = None
         if STATE.disability == 'deaf':
-            Text(parent=self, text='[ you hear: nothing ]', position=(-.86, .47),
-                 scale=.9, color=Color(.5, .8, .7, .8))
+            Text(parent=self, text='[ audio unavailable ]', position=(-.86, .335),
+                 scale=.72, color=Color(.5, .8, .7, .8))
 
     def sound(self, text, duration=4, color=None, cue='chime'):
         """A sound cue. Never reaches a deaf player — text or audio."""
@@ -128,7 +129,11 @@ class Announcer(Entity):
     def _show(self, text, duration, color):
         if STATE.disability == 'dyslexia':
             text = dyslexify(text)
-        t = Text(parent=self, text=text, y=.42 - random.uniform(0, .04),
-                 x=0, origin=(0, 0), scale=1.05, color=color)
-        t.animate('y', t.y + .03, duration=duration)
-        destroy(t, delay=duration)
+        # One reserved notice lane: a new event replaces the previous event
+        # instead of spawning several labels on top of one another.
+        if self.notice:
+            destroy(self.notice)
+        self.notice = Text(parent=self, text=text, y=.29, x=0, origin=(0, 0),
+                           scale=.9, color=color)
+        self.notice.animate('y', .31, duration=duration)
+        destroy(self.notice, delay=duration)

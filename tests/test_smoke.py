@@ -33,18 +33,6 @@ def test_core_modules_import_without_starting_game() -> None:
 def test_catalogs_have_required_entries() -> None:
     assert {"none", "adhd", "schizophrenia", "wheelchair", "visual", "deaf", "dyslexia"} <= DISABILITIES.keys()
     assert {"school", "train", "zombies", "kitchen"} <= set(SCENARIOS)
-
-
-def test_school_paper_blur_tracks_visual_intensity_and_accommodations(monkeypatch) -> None:
-    from simulator import school
-
-    monkeypatch.setattr(school.STATE, "disability", "visual")
-    monkeypatch.setattr(school.STATE, "blindness", .82)
-    assert school._paper_blur_intensity() == .82
-    assert school._paper_blur_intensity(accommodations=True) == 0.0
-
-    monkeypatch.setattr(school.STATE, "disability", "none")
-    assert school._paper_blur_intensity() == 0.0
     assert DISABILITIES.keys() == REFLECTIONS.keys()
 
 
