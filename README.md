@@ -128,7 +128,10 @@ Each experience should be discussed using three questions:
 ### Visual impairment
 
 - **In the game:** A progressive defocus-blur effect is adjustable from the menu or with
-  **[** and **]**. macOS narration provides an audio channel for selected text.
+  **[** and **]**. macOS narration provides an audio channel for selected text. In the
+  School Test, the paper is read by touch: each question and its options appear one
+  character at a time, like reading braille, while the exam clock keeps running. Pressing
+  **V** for accommodations (screen reader, large print) shows the whole question at once.
 - **Research connection:** Visual impairment includes many different patterns and causes;
   it is not synonymous with complete darkness. WHO notes that vision rehabilitation and
   tools such as mobility training, braille, and digital assistive technologies can support

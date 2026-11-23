@@ -12,6 +12,7 @@ from .config import STATE
 from .dialogue import dyslexify
 
 TEST_TIME = 300              # 30 questions, five minutes
+BRAILLE_CHARS_PER_SEC = 9    # visual mode: the paper is read by touch, a little at a time
 
 
 def _make_questions():
@@ -88,6 +89,17 @@ def _mask_center(line, frac=.5):
         return '~' * n
     keep = int(n * (1 - frac) / 2)
     return line[:keep] + '~' * (n - 2 * keep) + line[-keep:]
+
+
+def _braille_reveal(lines, chars):
+    """Visual mode without accommodations: the paper is read by touch, one
+    character after another, so only the first `chars` characters (counted
+    across the question, then each option in turn) can be read so far."""
+    out = []
+    for line in lines:
+        out.append(line[:max(0, chars)])
+        chars -= len(line)
+    return out
 
 
 class SchoolTestScenario(BaseScenario):
@@ -577,6 +589,8 @@ class TestUI(Entity):
         self.rescramble = 0
         self.blocked_by = None            # a MiniTask or shadow covering the paper
         self.jitter_t = 0
+        self.braille_chars = 0.0          # visual mode: characters read so far
+        self.braille_q = -1               # question those characters belong to
 
         Entity(parent=self, model='quad', color=Color(.05, .08, .1, .92),
                scale=(1, .7), y=.05, z=1)
@@ -619,6 +633,13 @@ class TestUI(Entity):
                 self._q_cache = dyslexify(q)
                 self._o_cache = [dyslexify(o) for o in opt_lines]
             q, opt_lines = self._q_cache, self._o_cache
+
+        if STATE.disability == 'visual' and not self.accommodations:
+            if self.braille_q != self.q_index:      # new question: start over
+                self.braille_q = self.q_index
+                self.braille_chars = 0.0
+            self.braille_chars += dt * BRAILLE_CHARS_PER_SEC
+            q, *opt_lines = _braille_reveal([q] + opt_lines, int(self.braille_chars))
 
         # the paper is part of the world: every vision condition reaches it
         severity, central = (0.0, False) if self.accommodations else _vision_severity()

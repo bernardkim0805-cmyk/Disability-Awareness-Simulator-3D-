@@ -52,7 +52,7 @@ DISABILITIES = {
         name='Visual impairment',
         icon='[ - ]',
         color=Color(.25, .25, .3, 1),
-        desc='The world becomes progressively out of focus.\nUse the slider (or [ and ] keys in-game) to set\nthe blur intensity from clear to heavily blurred.',
+        desc='The world becomes progressively out of focus.\nUse the slider (or [ and ] keys in-game) to set\nthe blur intensity. Test papers are read by touch,\none character at a time, like braille.',
     ),
     'deaf': dict(
         name='Deaf / hard of hearing',
